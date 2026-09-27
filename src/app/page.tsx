@@ -1,15 +1,17 @@
-/* This example requires Tailwind CSS v2.0+ */
-import React from "react";
-import { Fragment } from "react";
+"use client";
+
+import React, { Fragment } from "react";
 import { Popover, Transition } from "@headlessui/react";
-import { MenuIcon, XIcon } from "@heroicons/react/outline";
 import {
-  AnnotationIcon,
+  Bars3Icon as MenuIcon,
+  XMarkIcon as XIcon,
+  ChatBubbleBottomCenterTextIcon as AnnotationIcon,
   GlobeAltIcon,
-  LightningBoltIcon,
+  BoltIcon as LightningBoltIcon,
   ScaleIcon,
-} from "@heroicons/react/outline";
+} from "@heroicons/react/24/outline";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faFacebookF, faTwitter, faGooglePlusG } from "@fortawesome/free-brands-svg-icons";
 
 const features = [
   {
@@ -71,6 +73,7 @@ function Hero() {
                     <a href="#">
                       <span className="sr-only">Workflow</span>
                       <img
+                        alt="Workflow"
                         className="h-8 w-auto sm:h-10"
                         src="https://tailwindui.com/img/logos/workflow-mark-indigo-600.svg"
                       />
@@ -241,7 +244,6 @@ function Feature() {
   );
 }
 
-/* This example requires Tailwind CSS v2.0+ */
 function GetStarted() {
   return (
     <div className="bg-slate-200">
@@ -279,141 +281,140 @@ function Footer() {
   return (
     <div className=" bg-slate-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <footer class="footer-1 py-8 sm:py-12">
-          <div class="container mx-auto">
-            <div class="sm:flex sm:flex-wrap sm:-mx-4 md:py-4">
-              <div class="px-4 sm:w-1/2 md:w-1/4 xl:w-1/6">
-                <h5 class="text-xl font-bold mb-6">Features</h5>
-                <ul class="list-none footer-links">
-                  <li class="mb-2">
+        <footer className="footer-1 py-8 sm:py-12">
+          <div className="container mx-auto">
+            <div className="sm:flex sm:flex-wrap sm:-mx-4 md:py-4">
+              <div className="px-4 sm:w-1/2 md:w-1/4 xl:w-1/6">
+                <h5 className="text-xl font-bold mb-6">Features</h5>
+                <ul className="list-none footer-links">
+                  <li className="mb-2">
                     <a
                       href="#"
-                      class="border-b border-solid border-transparent hover:border-purple-800 hover:text-purple-800"
+                      className="border-b border-solid border-transparent hover:border-purple-800 hover:text-purple-800"
                     >
                       Cool stuff
                     </a>
                   </li>
                 </ul>
               </div>
-              <div class="px-4 sm:w-1/2 md:w-1/4 xl:w-1/6 mt-8 sm:mt-0">
-                <h5 class="text-xl font-bold mb-6">Resources</h5>
-                <ul class="list-none footer-links">
-                  <li class="mb-2">
+              <div className="px-4 sm:w-1/2 md:w-1/4 xl:w-1/6 mt-8 sm:mt-0">
+                <h5 className="text-xl font-bold mb-6">Resources</h5>
+                <ul className="list-none footer-links">
+                  <li className="mb-2">
                     <a
                       href="#"
-                      class="border-b border-solid border-transparent hover:border-purple-800 hover:text-purple-800"
+                      className="border-b border-solid border-transparent hover:border-purple-800 hover:text-purple-800"
                     >
                       Resource
                     </a>
                   </li>
                 </ul>
               </div>
-              <div class="px-4 sm:w-1/2 md:w-1/4 xl:w-1/6 mt-8 md:mt-0">
-                <h5 class="text-xl font-bold mb-6">About</h5>
-                <ul class="list-none footer-links">
-                  <li class="mb-2">
+              <div className="px-4 sm:w-1/2 md:w-1/4 xl:w-1/6 mt-8 md:mt-0">
+                <h5 className="text-xl font-bold mb-6">About</h5>
+                <ul className="list-none footer-links">
+                  <li className="mb-2">
                     <a
                       href="#"
-                      class="border-b border-solid border-transparent hover:border-purple-800 hover:text-purple-800"
+                      className="border-b border-solid border-transparent hover:border-purple-800 hover:text-purple-800"
                     >
                       Team
                     </a>
                   </li>
-                  <li class="mb-2">
+                  <li className="mb-2">
                     <a
                       href="#"
-                      class="border-b border-solid border-transparent hover:border-purple-800 hover:text-purple-800"
+                      className="border-b border-solid border-transparent hover:border-purple-800 hover:text-purple-800"
                     >
                       Locations
                     </a>
                   </li>
-                  <li class="mb-2">
+                  <li className="mb-2">
                     <a
                       href="#"
-                      class="border-b border-solid border-transparent hover:border-purple-800 hover:text-purple-800"
+                      className="border-b border-solid border-transparent hover:border-purple-800 hover:text-purple-800"
                     >
                       Privacy
                     </a>
                   </li>
-                  <li class="mb-2">
+                  <li className="mb-2">
                     <a
                       href="#"
-                      class="border-b border-solid border-transparent hover:border-purple-800 hover:text-purple-800"
+                      className="border-b border-solid border-transparent hover:border-purple-800 hover:text-purple-800"
                     >
                       Terms
                     </a>
                   </li>
                 </ul>
               </div>
-              <div class="px-4 sm:w-1/2 md:w-1/4 xl:w-1/6 mt-8 md:mt-0">
-                <h5 class="text-xl font-bold mb-6">Help</h5>
-                <ul class="list-none footer-links">
-                  <li class="mb-2">
+              <div className="px-4 sm:w-1/2 md:w-1/4 xl:w-1/6 mt-8 md:mt-0">
+                <h5 className="text-xl font-bold mb-6">Help</h5>
+                <ul className="list-none footer-links">
+                  <li className="mb-2">
                     <a
                       href="#"
-                      class="border-b border-solid border-transparent hover:border-purple-800 hover:text-purple-800"
+                      className="border-b border-solid border-transparent hover:border-purple-800 hover:text-purple-800"
                     >
                       Support
                     </a>
                   </li>
-                  <li class="mb-2">
+                  <li className="mb-2">
                     <a
                       href="#"
-                      class="border-b border-solid border-transparent hover:border-purple-800 hover:text-purple-800"
+                      className="border-b border-solid border-transparent hover:border-purple-800 hover:text-purple-800"
                     >
                       Help Center
                     </a>
                   </li>
-                  <li class="mb-2">
+                  <li className="mb-2">
                     <a
                       href="#"
-                      class="border-b border-solid border-transparent hover:border-purple-800 hover:text-purple-800"
+                      className="border-b border-solid border-transparent hover:border-purple-800 hover:text-purple-800"
                     >
                       Contact Us
                     </a>
                   </li>
                 </ul>
               </div>
-              <div class="px-4 mt-4 sm:w-1/3 xl:w-1/6 sm:mx-auto xl:mt-0 xl:ml-auto">
-                <h5 class="text-xl font-bold mb-6 sm:text-center xl:text-left">
+              <div className="px-4 mt-4 sm:w-1/3 xl:w-1/6 sm:mx-auto xl:mt-0 xl:ml-auto">
+                <h5 className="text-xl font-bold mb-6 sm:text-center xl:text-left">
                   Stay connected
                 </h5>
-                <div class="flex sm:justify-center xl:justify-start">
+                <div className="flex sm:justify-center xl:justify-start">
                   <a
-                    href=""
+                    href="#"
                     className="w-8 h-8 border border-2 border-gray-400 rounded-full text-center py-1 text-gray-600 hover:text-white hover:bg-blue-600 hover:border-blue-600"
                   >
-                    <FontAwesomeIcon icon="fab fa-facebook-f" />
+                    <FontAwesomeIcon icon={faFacebookF} />
                   </a>
                   <a
-                    href=""
-                    class="w-8 h-8 border border-2 border-gray-400 rounded-full text-center py-1 ml-2 text-gray-600 hover:text-white hover:bg-blue-400 hover:border-blue-400"
+                    href="#"
+                    className="w-8 h-8 border border-2 border-gray-400 rounded-full text-center py-1 ml-2 text-gray-600 hover:text-white hover:bg-blue-400 hover:border-blue-400"
                   >
-                    <i class="fab fa-twitter"></i>
+                    <FontAwesomeIcon icon={faTwitter} />
                   </a>
                   <a
-                    href=""
-                    class="w-8 h-8 border border-2 border-gray-400 rounded-full text-center py-1 ml-2 text-gray-600 hover:text-white hover:bg-red-600 hover:border-red-600"
+                    href="#"
+                    className="w-8 h-8 border border-2 border-gray-400 rounded-full text-center py-1 ml-2 text-gray-600 hover:text-white hover:bg-red-600 hover:border-red-600"
                   >
-                    <FontAwesomeIcon icon="fab fa-google-plus-g" />
+                    <FontAwesomeIcon icon={faGooglePlusG} />
                   </a>
                 </div>
               </div>
             </div>
 
-            <div class="sm:flex sm:flex-wrap sm:-mx-4 mt-6 pt-6 sm:mt-12 sm:pt-12 border-t">
-              <div class="sm:w-full px-4 md:w-1/6">
-                {/* <strong>FWR</strong> */}
+            <div className="sm:flex sm:flex-wrap sm:-mx-4 mt-6 pt-6 sm:mt-12 sm:pt-12 border-t">
+              <div className="sm:w-full px-4 md:w-1/6">
               </div>
-              <div class="px-4 sm:w-1/2 md:w-1/4 mt-4 md:mt-0">
-                <h6 class="font-bold mb-2">Address</h6>
-                <h1 class="not-italic mb-4 text-sm">
+              <div className="px-4 sm:w-1/2 md:w-1/4 mt-4 md:mt-0">
+                <h6 className="font-bold mb-2">Address</h6>
+                <h1 className="not-italic mb-4 text-sm">
                   123 6th St. Melbourne, FL 32904
                 </h1>
               </div>
-              <div class="px-4 sm:w-1/2 md:w-1/4 mt-4 md:mt-0"></div>
-              <div class="px-4 md:w-1/4 md:ml-auto mt-6 sm:mt-4 md:mt-0">
-                <button class="px-4 py-2 bg-purple-800 hover:bg-purple-900 rounded text-white">
+              <div className="px-4 sm:w-1/2 md:w-1/4 mt-4 md:mt-0"></div>
+              <div className="px-4 md:w-1/4 md:ml-auto mt-6 sm:mt-4 md:mt-0">
+                <button className="px-4 py-2 bg-purple-800 hover:bg-purple-900 rounded text-white">
                   Get Started
                 </button>
               </div>
@@ -425,7 +426,7 @@ function Footer() {
   );
 }
 
-function App() {
+export default function App() {
   return (
     <div>
       <Hero />
@@ -435,5 +436,3 @@ function App() {
     </div>
   );
 }
-
-export default App;
