@@ -1,8 +1,10 @@
 'use client'
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -40,8 +42,8 @@ export default function LoginPage() {
     if (!user.isActivated) {
       setNeedsActivation(true);
       if (!user.hasPassword) {
-
-        setError('Akun belum diaktivasi. Karena Anda belum membuat password, saat aktivasi Anda akan diarahkan untuk membuat password.');
+        alert('Akun belum diaktivasi dan belum ada password. Anda akan diarahkan untuk membuat password.');
+        router.push('/create-password');
       } else {
         setError('Akun belum diaktivasi. Silakan cek email Anda untuk aktivasi.');
       }
