@@ -4,7 +4,7 @@ import { FormEvent, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
-type LoginMethod = 'email' | 'phone'
+type LoginMethod = 'email' | 'phone' | 'email_otp'
 
 type AuthError = { code?: string; message?: string; status?: number }
 
@@ -62,12 +62,42 @@ export default function LoginPage() {
     router.refresh()
   }
 
+  async function handleEmailOtpLogin() {
+    const supabase = createClient()
+    const { error: otpError } = await supabase.auth.signInWithOtp({ email: email.trim() })
+
+    if (otpError) {
+      setError(getRateLimitMessage(otpError, 'email') ?? 'Kode OTP email belum dapat dikirim. Pastikan format email benar.')
+      return
+    }
+
+    setOtpSent(true)
+    setMessage('Kode OTP telah dikirim ke email Anda.')
+  }
+
+  async function verifyEmailOtp() {
+    const supabase = createClient()
+    const { error: verifyError } = await supabase.auth.verifyOtp({
+      email: email.trim(),
+      token: otp.trim(),
+      type: 'email',
+    })
+
+    if (verifyError) {
+      setError('Kode OTP salah atau sudah kedaluwarsa. Silakan minta kode baru.')
+      return
+    }
+
+    router.replace('/dashboard')
+    router.refresh()
+  }
+
   async function handlePhoneLogin() {
     const supabase = createClient()
     const { error: otpError } = await supabase.auth.signInWithOtp({ phone: phone.trim() })
 
     if (otpError) {
-      setError(getRateLimitMessage(otpError, 'SMS') ?? 'Kode OTP belum dapat dikirim. Pastikan nomor memakai format internasional, misalnya +628123456789.')
+      setError(getRateLimitMessage(otpError, 'sms') ?? 'Kode OTP belum dapat dikirim. Pastikan nomor memakai format internasional, misalnya +628123456789.')
       return
     }
 
@@ -99,6 +129,10 @@ export default function LoginPage() {
 
     if (method === 'email') {
       await handleEmailLogin()
+    } else if (method === 'email_otp' && otpSent) {
+      await verifyEmailOtp()
+    } else if (method === 'email_otp') {
+      await handleEmailOtpLogin()
     } else if (otpSent) {
       await verifyPhoneOtp()
     } else {
@@ -130,12 +164,15 @@ export default function LoginPage() {
           <p className="mt-2 text-sm text-slate-600">Masuk untuk mengelola kebutuhan indekos Anda.</p>
         </div>
 
-        <div className="mb-6 grid grid-cols-2 rounded-lg bg-slate-100 p-1" role="tablist" aria-label="Metode login">
-          <button type="button" role="tab" aria-selected={method === 'email'} onClick={() => selectMethod('email')} className={`rounded-md px-3 py-2 text-sm font-semibold transition ${method === 'email' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
-            Email & Password
+        <div className="mb-6 grid grid-cols-3 rounded-lg bg-slate-100 p-1 text-center" role="tablist" aria-label="Metode login">
+          <button type="button" role="tab" aria-selected={method === 'email'} onClick={() => selectMethod('email')} className={`rounded-md px-2 py-2 text-xs font-semibold transition ${method === 'email' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+            Email (Password)
           </button>
-          <button type="button" role="tab" aria-selected={method === 'phone'} onClick={() => selectMethod('phone')} className={`rounded-md px-3 py-2 text-sm font-semibold transition ${method === 'phone' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
-            Nomor Telepon
+          <button type="button" role="tab" aria-selected={method === 'email_otp'} onClick={() => selectMethod('email_otp')} className={`rounded-md px-2 py-2 text-xs font-semibold transition ${method === 'email_otp' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+            Email (OTP)
+          </button>
+          <button type="button" role="tab" aria-selected={method === 'phone'} onClick={() => selectMethod('phone')} className={`rounded-md px-2 py-2 text-xs font-semibold transition ${method === 'phone' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+            SMS (OTP)
           </button>
         </div>
 
@@ -154,6 +191,18 @@ export default function LoginPage() {
                 <input id="password" type="password" autoComplete="current-password" required value={password} onChange={(event) => setPassword(event.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" placeholder="Masukkan password" />
               </div>
             </>
+          ) : method === 'email_otp' ? (
+            <div>
+              <label htmlFor="emailOtp" className="mb-1 block text-sm font-medium">Alamat Email</label>
+              <input id="emailOtp" type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} disabled={otpSent} className="w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 disabled:bg-slate-100" placeholder="nama@email.com" />
+              {otpSent && (
+                <div className="mt-4">
+                  <label htmlFor="otpEmail" className="mb-1 block text-sm font-medium">Kode OTP</label>
+                  <input id="otpEmail" type="text" autoComplete="one-time-code" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} required value={otp} onChange={(event) => setOtp(event.target.value.replace(/\D/g, ''))} className="w-full rounded-lg border border-slate-300 px-3 py-2.5 tracking-[0.35em] outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" placeholder="123456" />
+                </div>
+              )}
+              <p className="mt-2 text-xs text-slate-500">Kami akan mengirimkan 6 digit kode login ke email ini.</p>
+            </div>
           ) : (
             <div>
               <label htmlFor="phone" className="mb-1 block text-sm font-medium">Nomor Telepon</label>
@@ -178,7 +227,7 @@ export default function LoginPage() {
           )}
 
           <button type="submit" disabled={loading} className="w-full rounded-lg bg-indigo-600 px-4 py-3 font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60">
-            {loading ? 'Memproses...' : method === 'phone' && otpSent ? 'Verifikasi OTP' : method === 'phone' ? 'Kirim OTP' : 'Masuk'}
+            {loading ? 'Memproses...' : (method === 'phone' || method === 'email_otp') && otpSent ? 'Verifikasi OTP' : (method === 'phone' || method === 'email_otp') ? 'Kirim OTP' : 'Masuk'}
           </button>
         </form>
       </div>
