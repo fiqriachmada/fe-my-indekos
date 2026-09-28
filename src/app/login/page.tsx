@@ -6,6 +6,20 @@ import { createClient } from '@/lib/supabase/client'
 
 type LoginMethod = 'email' | 'phone'
 
+type AuthError = { code?: string; message?: string; status?: number }
+
+function getRateLimitMessage(authError: AuthError, channel: 'email' | 'sms') {
+  const isRateLimited = authError.status === 429 || authError.code?.includes('rate_limit') || authError.code?.includes('over_')
+  if (!isRateLimited) return null
+
+  const secondsMatch = authError.message?.match(/(?:after|in)\s+(\d+)\s+seconds?/i)
+  if (!secondsMatch) return `Pengiriman OTP ${channel} sedang melebihi batas. Silakan coba lagi nanti.`
+
+  const seconds = Number(secondsMatch[1])
+  const wait = seconds >= 60 ? `${Math.ceil(seconds / 60)} menit` : `${seconds} detik`
+  return `Pengiriman OTP ${channel} sedang melebihi batas. Silakan coba lagi dalam ${wait}.`
+}
+
 export default function LoginPage() {
   const router = useRouter()
   const [method, setMethod] = useState<LoginMethod>('email')
@@ -53,7 +67,7 @@ export default function LoginPage() {
     const { error: otpError } = await supabase.auth.signInWithOtp({ phone: phone.trim() })
 
     if (otpError) {
-      setError('Kode OTP belum dapat dikirim. Pastikan nomor memakai format internasional, misalnya +628123456789.')
+      setError(getRateLimitMessage(otpError, 'SMS') ?? 'Kode OTP belum dapat dikirim. Pastikan nomor memakai format internasional, misalnya +628123456789.')
       return
     }
 
@@ -100,7 +114,11 @@ export default function LoginPage() {
     const supabase = createClient()
     const { error: resendError } = await supabase.auth.resend({ type: 'signup', email })
     setResending(false)
-    setMessage(resendError ? 'Email aktivasi belum dapat dikirim. Coba lagi nanti.' : 'Email aktivasi telah dikirim ulang.')
+    if (resendError) {
+      setError(getRateLimitMessage(resendError, 'email') ?? 'Email aktivasi belum dapat dikirim. Coba lagi nanti.')
+      return
+    }
+    setMessage('Email aktivasi telah dikirim ulang.')
   }
 
   return (
