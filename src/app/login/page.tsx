@@ -64,7 +64,13 @@ export default function LoginPage() {
 
   async function handleEmailOtpLogin() {
     const supabase = createClient()
-    const { error: otpError } = await supabase.auth.signInWithOtp({ email: email.trim() })
+    const origin = process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || window.location.origin
+    const { error: otpError } = await supabase.auth.signInWithOtp({
+      email: email.trim(),
+      options: {
+        emailRedirectTo: `${origin}/auth/callback?next=/dashboard`,
+      },
+    })
 
     if (otpError) {
       setError(getRateLimitMessage(otpError, 'email') ?? 'Kode OTP email belum dapat dikirim. Pastikan format email benar.')
