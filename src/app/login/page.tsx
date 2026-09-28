@@ -4,24 +4,36 @@ import { FormEvent, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
+type LoginMethod = 'email' | 'phone'
+
 export default function LoginPage() {
   const router = useRouter()
+  const [method, setMethod] = useState<LoginMethod>('email')
   const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
+  const [otp, setOtp] = useState('')
+  const [otpSent, setOtpSent] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [resending, setResending] = useState(false)
 
-  async function handleLogin(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setLoading(true)
+  function resetFeedback() {
     setError(null)
     setMessage(null)
+  }
 
+  function selectMethod(nextMethod: LoginMethod) {
+    setMethod(nextMethod)
+    setOtpSent(false)
+    setOtp('')
+    resetFeedback()
+  }
+
+  async function handleEmailLogin() {
     const supabase = createClient()
     const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
-    setLoading(false)
 
     if (signInError) {
       if (signInError.code === 'email_not_confirmed') {
@@ -36,10 +48,55 @@ export default function LoginPage() {
     router.refresh()
   }
 
+  async function handlePhoneLogin() {
+    const supabase = createClient()
+    const { error: otpError } = await supabase.auth.signInWithOtp({ phone: phone.trim() })
+
+    if (otpError) {
+      setError('Kode OTP belum dapat dikirim. Pastikan nomor memakai format internasional, misalnya +628123456789.')
+      return
+    }
+
+    setOtpSent(true)
+    setMessage('Kode OTP telah dikirim ke nomor telepon Anda.')
+  }
+
+  async function verifyPhoneOtp() {
+    const supabase = createClient()
+    const { error: verifyError } = await supabase.auth.verifyOtp({
+      phone: phone.trim(),
+      token: otp.trim(),
+      type: 'sms',
+    })
+
+    if (verifyError) {
+      setError('Kode OTP salah atau sudah kedaluwarsa. Silakan minta kode baru.')
+      return
+    }
+
+    router.replace('/dashboard')
+    router.refresh()
+  }
+
+  async function handleLogin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setLoading(true)
+    resetFeedback()
+
+    if (method === 'email') {
+      await handleEmailLogin()
+    } else if (otpSent) {
+      await verifyPhoneOtp()
+    } else {
+      await handlePhoneLogin()
+    }
+
+    setLoading(false)
+  }
+
   async function resendActivation() {
     setResending(true)
-    setError(null)
-    setMessage(null)
+    resetFeedback()
     const supabase = createClient()
     const { error: resendError } = await supabase.auth.resend({ type: 'signup', email })
     setResending(false)
@@ -55,30 +112,55 @@ export default function LoginPage() {
           <p className="mt-2 text-sm text-slate-600">Masuk untuk mengelola kebutuhan indekos Anda.</p>
         </div>
 
+        <div className="mb-6 grid grid-cols-2 rounded-lg bg-slate-100 p-1" role="tablist" aria-label="Metode login">
+          <button type="button" role="tab" aria-selected={method === 'email'} onClick={() => selectMethod('email')} className={`rounded-md px-3 py-2 text-sm font-semibold transition ${method === 'email' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+            Email & Password
+          </button>
+          <button type="button" role="tab" aria-selected={method === 'phone'} onClick={() => selectMethod('phone')} className={`rounded-md px-3 py-2 text-sm font-semibold transition ${method === 'phone' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+            Nomor Telepon
+          </button>
+        </div>
+
         <form className="space-y-5" onSubmit={handleLogin}>
-          <div>
-            <label htmlFor="email" className="mb-1 block text-sm font-medium">Email</label>
-            <input id="email" type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" placeholder="nama@email.com" />
-          </div>
-          <div>
-            <div className="mb-1 flex items-center justify-between">
-              <label htmlFor="password" className="block text-sm font-medium">Password</label>
-              <a href="/forgot-password" className="text-sm font-medium text-indigo-600 hover:text-indigo-500">Lupa password?</a>
+          {method === 'email' ? (
+            <>
+              <div>
+                <label htmlFor="email" className="mb-1 block text-sm font-medium">Email</label>
+                <input id="email" type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" placeholder="nama@email.com" />
+              </div>
+              <div>
+                <div className="mb-1 flex items-center justify-between">
+                  <label htmlFor="password" className="block text-sm font-medium">Password</label>
+                  <a href="/forgot-password" className="text-sm font-medium text-indigo-600 hover:text-indigo-500">Lupa password?</a>
+                </div>
+                <input id="password" type="password" autoComplete="current-password" required value={password} onChange={(event) => setPassword(event.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" placeholder="Masukkan password" />
+              </div>
+            </>
+          ) : (
+            <div>
+              <label htmlFor="phone" className="mb-1 block text-sm font-medium">Nomor Telepon</label>
+              <input id="phone" type="tel" autoComplete="tel" inputMode="tel" required value={phone} onChange={(event) => setPhone(event.target.value)} disabled={otpSent} className="w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 disabled:bg-slate-100" placeholder="+628123456789" />
+              {otpSent && (
+                <div className="mt-4">
+                  <label htmlFor="otp" className="mb-1 block text-sm font-medium">Kode OTP</label>
+                  <input id="otp" type="text" autoComplete="one-time-code" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} required value={otp} onChange={(event) => setOtp(event.target.value.replace(/\D/g, ''))} className="w-full rounded-lg border border-slate-300 px-3 py-2.5 tracking-[0.35em] outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" placeholder="123456" />
+                </div>
+              )}
+              <p className="mt-2 text-xs text-slate-500">Gunakan format internasional. Kami akan mengirim kode OTP lewat SMS.</p>
             </div>
-            <input id="password" type="password" autoComplete="current-password" required value={password} onChange={(event) => setPassword(event.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" placeholder="Masukkan password" />
-          </div>
+          )}
 
           {error && <div role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</div>}
           {message && <div role="status" className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-700">{message}</div>}
 
-          {error?.includes('belum diaktivasi') && (
+          {method === 'email' && error?.includes('belum diaktivasi') && (
             <button type="button" onClick={resendActivation} disabled={resending} className="w-full rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-sm font-semibold text-indigo-700 hover:bg-indigo-100 disabled:opacity-60">
               {resending ? 'Mengirim...' : 'Kirim ulang email aktivasi'}
             </button>
           )}
 
           <button type="submit" disabled={loading} className="w-full rounded-lg bg-indigo-600 px-4 py-3 font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60">
-            {loading ? 'Memproses...' : 'Masuk'}
+            {loading ? 'Memproses...' : method === 'phone' && otpSent ? 'Verifikasi OTP' : method === 'phone' ? 'Kirim OTP' : 'Masuk'}
           </button>
         </form>
       </div>
