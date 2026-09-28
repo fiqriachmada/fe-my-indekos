@@ -12,8 +12,13 @@ export default function ForgotPasswordPage() {
     event.preventDefault()
     setLoading(true)
     const supabase = createClient()
+    const callbackUrl = `${window.location.origin}/auth/callback?next=${encodeURIComponent('/create-password')}`
+    const redirectTo = window.location.hostname.endsWith('vercel.app')
+      ? callbackUrl
+      : `${process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ?? callbackUrl}?next=${encodeURIComponent('/create-password')}`
+
     await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ?? `${window.location.origin}/auth/callback`}?next=/create-password`,
+      redirectTo,
     })
     setLoading(false)
     setSent(true)
