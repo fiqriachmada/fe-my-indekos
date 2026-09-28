@@ -64,12 +64,8 @@ export default function LoginPage() {
 
   async function handleEmailOtpLogin() {
     const supabase = createClient()
-    const origin = process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || window.location.origin
     const { error: otpError } = await supabase.auth.signInWithOtp({
       email: email.trim(),
-      options: {
-        emailRedirectTo: `${origin}/auth/callback?next=/dashboard`,
-      },
     })
 
     if (otpError) {
@@ -78,7 +74,7 @@ export default function LoginPage() {
     }
 
     setOtpSent(true)
-    setMessage('Kode OTP telah dikirim ke email Anda.')
+    setMessage('Kode OTP 6 digit telah dikirim ke email Anda.')
   }
 
   async function verifyEmailOtp() {

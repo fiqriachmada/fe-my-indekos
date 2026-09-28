@@ -43,12 +43,7 @@ export default function ForgotPasswordPage() {
     setError(null)
 
     const supabase = createClient()
-    const origin = process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || window.location.origin
-    const redirectTo = `${origin}/auth/callback?next=${encodeURIComponent('/create-password')}`
-
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo,
-    })
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email)
     setLoading(false)
 
     if (resetError) {
@@ -103,7 +98,7 @@ export default function ForgotPasswordPage() {
           <>
             <h1 className="mt-8 text-3xl font-bold">Lupa password?</h1>
             <p className="mt-2 text-sm text-slate-600">
-              Masukkan email Anda. Kami akan mengirimkan kode OTP dan tautan untuk membuat password baru.
+              Masukkan email Anda. Kami akan mengirimkan kode OTP 6 digit untuk membuat password baru.
             </p>
 
             {error && (
@@ -133,7 +128,7 @@ export default function ForgotPasswordPage() {
                 disabled={loading}
                 className="w-full rounded-lg bg-indigo-600 px-4 py-3 font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
               >
-                {loading ? 'Mengirim...' : 'Kirim Kode OTP / Tautan'}
+                {loading ? 'Mengirim...' : 'Kirim Kode OTP'}
               </button>
             </form>
           </>
@@ -176,10 +171,6 @@ export default function ForgotPasswordPage() {
                 {loading ? 'Memverifikasi...' : 'Verifikasi & Lanjut'}
               </button>
             </form>
-
-            <div className="mt-6 rounded-lg bg-slate-50 p-3 text-center text-xs text-slate-500">
-              💡 <em>Tips: Anda juga bisa langsung mengklik tombol link di email tanpa memasukkan kode manual.</em>
-            </div>
 
             <div className="mt-6 flex items-center justify-between text-sm">
               <button
