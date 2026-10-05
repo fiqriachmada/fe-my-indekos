@@ -76,12 +76,20 @@ function FloatingControls() {
   const authPath = useAuthPath()
   const [theme, setTheme] = useState<"light" | "dark" | "system">("system")
   const [isOpen, setIsOpen] = useState(false)
+  const [isAccountOpen, setIsAccountOpen] = useState(false)
 
   useEffect(() => {
     const savedTheme = window.localStorage.getItem("my-indekos-theme") as "light" | "dark" | "system" | null
     const nextTheme = savedTheme ?? "system"
     setTheme(nextTheme)
     applyTheme(nextTheme)
+
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
+    const handleSystemThemeChange = () => {
+      if (nextTheme === "system") applyTheme("system")
+    }
+    mediaQuery.addEventListener("change", handleSystemThemeChange)
+    return () => mediaQuery.removeEventListener("change", handleSystemThemeChange)
   }, [])
 
   function applyTheme(nextTheme: "light" | "dark" | "system") {
@@ -139,12 +147,13 @@ function FloatingControls() {
         <span className="h-5 w-px bg-slate-300/70 dark:bg-white/20" aria-hidden="true" />
         {authPath === "/dashboard" ? (
           <div className="group relative">
-            <button type="button" aria-label="Buka menu akun" className="flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white/70 dark:text-slate-100 dark:hover:bg-white/10">
+            <button type="button" aria-label="Buka menu akun" aria-expanded={isAccountOpen} onClick={() => setIsAccountOpen((open) => !open)} className="flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white/70 dark:text-slate-100 dark:hover:bg-white/10">
               <UserCircleIcon className="h-4 w-4" aria-hidden="true" />
               <span className="hidden sm:inline">Akun</span>
               <ChevronDownIcon className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
-            <div className="invisible absolute bottom-12 right-0 min-w-36 translate-y-2 rounded-2xl border border-white/60 bg-white/85 p-1.5 opacity-0 shadow-xl backdrop-blur-xl transition group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 dark:border-white/15 dark:bg-slate-900/90">
+            <div className={`${isAccountOpen ? "visible translate-y-0 opacity-100" : "invisible translate-y-2 opacity-0"} absolute bottom-12 right-0 min-w-36 rounded-2xl border border-white/60 bg-white/85 p-1.5 shadow-xl backdrop-blur-xl transition dark:border-white/15 dark:bg-slate-900/90`}>
+
               <a href="/dashboard" className="block rounded-xl px-3 py-2 text-sm text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-white/10">Dashboard</a>
               <a href="/profile" className="block rounded-xl px-3 py-2 text-sm text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-white/10">Profile</a>
             </div>
@@ -164,9 +173,9 @@ function Hero() {
   const authPath = useAuthPath()
 
   return (
-    <div className="relative bg-white overflow-hidden">
+    <div className="relative overflow-hidden bg-background text-foreground transition-colors">
       <div className="max-w-7xl mx-auto">
-        <div className="relative z-10 pb-8 bg-white sm:pb-16 md:pb-20 lg:max-w-2xl lg:w-full lg:pb-28 xl:pb-32">
+        <div className="relative z-10 bg-background pb-8 sm:pb-16 md:pb-20 lg:max-w-2xl lg:w-full lg:pb-28 xl:pb-32">
           <svg
             className="hidden lg:block absolute right-0 inset-y-0 h-full w-48 text-white transform translate-x-1/2"
             fill="currentColor"
@@ -194,7 +203,7 @@ function Hero() {
                       />
                     </a>
                     <div className="-mr-2 flex items-center md:hidden">
-                      <Popover.Button className="bg-white rounded-md p-2 inline-flex items-center justify-center text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500">
+                      <Popover.Button className="rounded-md bg-background p-2 inline-flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500">
                         <span className="sr-only">Open main menu</span>
                         <MenuIcon className="h-6 w-6" aria-hidden="true" />
                       </Popover.Button>
@@ -206,7 +215,7 @@ function Hero() {
                     <a
                       key={item.name}
                       href={item.href}
-                      className="font-medium text-gray-500 hover:text-gray-900"
+                      className="font-medium text-muted-foreground hover:text-foreground"
                     >
                       {item.name}
                     </a>
@@ -239,7 +248,7 @@ function Hero() {
                       />
                     </div>
                     <div className="-mr-2">
-                      <Popover.Button className="bg-white rounded-md p-2 inline-flex items-center justify-center text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500">
+                      <Popover.Button className="rounded-md bg-background p-2 inline-flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500">
                         <span className="sr-only">Close main menu</span>
                         <XIcon className="h-6 w-6" aria-hidden="true" />
                       </Popover.Button>
@@ -264,13 +273,13 @@ function Hero() {
 
           <main className="mt-10 mx-auto max-w-7xl px-4 sm:mt-12 sm:px-6 md:mt-16 lg:mt-20 lg:px-8 xl:mt-28">
             <div className="sm:text-center lg:text-left">
-              <h1 className="text-4xl tracking-tight font-extrabold text-gray-900 sm:text-5xl md:text-6xl">
+              <h1 className="text-4xl tracking-tight font-extrabold text-foreground sm:text-5xl md:text-6xl">
                 <span className="block xl:inline">Data to enrich your</span>{" "}
                 <span className="block text-indigo-600 xl:inline">
                   online business
                 </span>
               </h1>
-              <p className="mt-3 text-base text-gray-500 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
+              <p className="mt-3 text-base text-muted-foreground sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
                 Anim aute id magna aliqua ad ad non deserunt sunt. Qui irure qui
                 lorem cupidatat commodo. Elit sunt amet fugiat veniam occaecat
                 fugiat aliqua.
