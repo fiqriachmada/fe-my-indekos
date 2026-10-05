@@ -1,7 +1,8 @@
 "use client";
 
-import React, { Fragment } from "react";
+import React, { Fragment, useEffect, useState } from "react";
 import { Popover, Transition } from "@headlessui/react";
+import { createClient } from "@/lib/supabase/client";
 import {
   Bars3Icon as MenuIcon,
   XMarkIcon as XIcon,
@@ -47,7 +48,28 @@ const navigation = [
   { name: "Company", href: "#" },
 ];
 
+function useAuthPath() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data }) => {
+      setIsAuthenticated(Boolean(data.user))
+    })
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(Boolean(session?.user))
+    })
+
+    return () => authListener.subscription.unsubscribe()
+  }, [])
+
+  return isAuthenticated ? "/dashboard" : "/login"
+}
+
 function Hero() {
+  const authPath = useAuthPath()
+
   return (
     <div className="relative bg-white overflow-hidden">
       <div className="max-w-7xl mx-auto">
@@ -96,7 +118,7 @@ function Hero() {
                       {item.name}
                     </a>
                   ))}
-                  <a href="/login" className="font-medium text-indigo-600 hover:text-indigo-500">Log in</a>
+                  <a href={authPath} className="font-medium text-indigo-600 hover:text-indigo-500">Log in</a>
                 </div>
               </nav>
             </div>
@@ -141,7 +163,7 @@ function Hero() {
                       </a>
                     ))}
                   </div>
-                  <a href="/login" className="block w-full px-5 py-3 text-center font-medium text-indigo-600 bg-gray-50 hover:bg-gray-100">Log in</a>
+                  <a href={authPath} className="block w-full px-5 py-3 text-center font-medium text-indigo-600 bg-gray-50 hover:bg-gray-100">Log in</a>
                 </div>
               </Popover.Panel>
             </Transition>
@@ -162,7 +184,7 @@ function Hero() {
               </p>
               <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start">
                 <div className="rounded-md shadow">
-                  <a href="/login" className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 md:py-4 md:text-lg md:px-10">Get started</a>
+                  <a href={authPath} className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 md:py-4 md:text-lg md:px-10">Get started</a>
                 </div>
                 <div className="mt-3 sm:mt-0 sm:ml-3">
                   <a
@@ -230,6 +252,8 @@ function Feature() {
 }
 
 function GetStarted() {
+  const authPath = useAuthPath()
+
   return (
     <div className="bg-slate-200">
       <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:py-16 lg:px-8 lg:flex lg:items-center lg:justify-between">
@@ -241,7 +265,7 @@ function GetStarted() {
         </h2>
         <div className="mt-8 flex lg:mt-0 lg:flex-shrink-0">
           <div className="inline-flex rounded-md shadow">
-            <a href="/login" className="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">Get started</a>
+            <a href={authPath} className="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">Get started</a>
           </div>
           <div className="ml-3 inline-flex rounded-md shadow">
             <a
