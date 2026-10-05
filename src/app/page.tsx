@@ -539,7 +539,7 @@ export default function App() {
       <Feature />
       <GetStarted />
       <Footer />
-      <FloatingControls />
+     
     </div>
   );
 }
