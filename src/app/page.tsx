@@ -10,6 +10,11 @@ import {
   GlobeAltIcon,
   BoltIcon as LightningBoltIcon,
   ScaleIcon,
+  SunIcon,
+  MoonIcon,
+  ComputerDesktopIcon,
+  ChevronDownIcon,
+  UserCircleIcon,
 } from "@heroicons/react/24/outline";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFacebookF, faTwitter, faGooglePlusG } from "@fortawesome/free-brands-svg-icons";
@@ -65,6 +70,94 @@ function useAuthPath() {
   }, [])
 
   return isAuthenticated ? "/dashboard" : "/login"
+}
+
+function FloatingControls() {
+  const authPath = useAuthPath()
+  const [theme, setTheme] = useState<"light" | "dark" | "system">("system")
+  const [isOpen, setIsOpen] = useState(false)
+
+  useEffect(() => {
+    const savedTheme = window.localStorage.getItem("my-indekos-theme") as "light" | "dark" | "system" | null
+    const nextTheme = savedTheme ?? "system"
+    setTheme(nextTheme)
+    applyTheme(nextTheme)
+  }, [])
+
+  function applyTheme(nextTheme: "light" | "dark" | "system") {
+    const root = document.documentElement
+    const isDark = nextTheme === "dark" || (nextTheme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches)
+    root.classList.toggle("dark", isDark)
+    root.style.colorScheme = isDark ? "dark" : "light"
+  }
+
+  function selectTheme(nextTheme: "light" | "dark" | "system") {
+    setTheme(nextTheme)
+    window.localStorage.setItem("my-indekos-theme", nextTheme)
+    applyTheme(nextTheme)
+  }
+
+  const themeOptions = [
+    { value: "light" as const, label: "Light", icon: SunIcon },
+    { value: "dark" as const, label: "Dark", icon: MoonIcon },
+    { value: "system" as const, label: "System", icon: ComputerDesktopIcon },
+  ]
+  const ActiveThemeIcon = themeOptions.find((option) => option.value === theme)?.icon ?? ComputerDesktopIcon
+
+  return (
+    <div className="fixed bottom-5 left-1/2 z-50 -translate-x-1/2">
+      <div className="relative flex items-center gap-1 rounded-full border border-white/50 bg-white/60 p-1.5 shadow-2xl shadow-indigo-900/20 backdrop-blur-xl dark:border-white/15 dark:bg-slate-900/65">
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setIsOpen((open) => !open)}
+            aria-expanded={isOpen}
+            aria-haspopup="menu"
+            aria-label="Pilih tema"
+            className="flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white/70 dark:text-slate-100 dark:hover:bg-white/10"
+          >
+            <ActiveThemeIcon className="h-4 w-4" aria-hidden="true" />
+            <span className="hidden sm:inline">{themeOptions.find((option) => option.value === theme)?.label}</span>
+            <ChevronDownIcon className="h-3.5 w-3.5" aria-hidden="true" />
+          </button>
+          {isOpen && (
+            <div role="menu" className="absolute bottom-12 left-0 min-w-32 rounded-2xl border border-white/60 bg-white/85 p-1.5 shadow-xl backdrop-blur-xl dark:border-white/15 dark:bg-slate-900/90">
+              {themeOptions.map(({ value, label, icon: Icon }) => (
+                <button
+                  key={value}
+                  type="button"
+                  role="menuitem"
+                  onClick={() => { selectTheme(value); setIsOpen(false) }}
+                  className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm transition ${theme === value ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-400/20 dark:text-indigo-200" : "text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-white/10"}`}
+                >
+                  <Icon className="h-4 w-4" aria-hidden="true" />{label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <span className="h-5 w-px bg-slate-300/70 dark:bg-white/20" aria-hidden="true" />
+        {authPath === "/dashboard" ? (
+          <div className="group relative">
+            <button type="button" aria-label="Buka menu akun" className="flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white/70 dark:text-slate-100 dark:hover:bg-white/10">
+              <UserCircleIcon className="h-4 w-4" aria-hidden="true" />
+              <span className="hidden sm:inline">Akun</span>
+              <ChevronDownIcon className="h-3.5 w-3.5" aria-hidden="true" />
+            </button>
+            <div className="invisible absolute bottom-12 right-0 min-w-36 translate-y-2 rounded-2xl border border-white/60 bg-white/85 p-1.5 opacity-0 shadow-xl backdrop-blur-xl transition group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 dark:border-white/15 dark:bg-slate-900/90">
+              <a href="/dashboard" className="block rounded-xl px-3 py-2 text-sm text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-white/10">Dashboard</a>
+              <a href="/profile" className="block rounded-xl px-3 py-2 text-sm text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-white/10">Profile</a>
+            </div>
+          </div>
+        ) : (
+          <a href="/login" className="flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white/70 dark:text-slate-100 dark:hover:bg-white/10">
+            <UserCircleIcon className="h-4 w-4" aria-hidden="true" />
+            <span>Login</span>
+          </a>
+        )}
+      </div>
+    </div>
+  )
 }
 
 function Hero() {
@@ -437,6 +530,7 @@ export default function App() {
       <Feature />
       <GetStarted />
       <Footer />
+      <FloatingControls />
     </div>
   );
 }
