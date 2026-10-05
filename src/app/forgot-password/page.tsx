@@ -6,6 +6,8 @@ import { createClient } from '@/lib/supabase/client'
 
 type AuthError = { code?: string; message?: string; status?: number }
 
+const APP_URL = 'https://my-indekos.vercel.app'
+
 function getRateLimitMessage(authError: AuthError) {
   const isRateLimited = authError.status === 429 || authError.code?.includes('rate_limit') || authError.code?.includes('over_')
   if (!isRateLimited) return null
@@ -43,7 +45,9 @@ export default function ForgotPasswordPage() {
     setError(null)
 
     const supabase = createClient()
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email)
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${APP_URL}/auth/callback?next=/create-password`,
+    })
     setLoading(false)
 
     if (resetError) {
