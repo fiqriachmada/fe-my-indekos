@@ -16,5 +16,5 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return NextResponse.redirect(`${origin}/auth/error`)
+  return NextResponse.redirect(`${appUrl}/auth/error`)
 }
