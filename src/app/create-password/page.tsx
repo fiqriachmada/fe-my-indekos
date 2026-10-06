@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { PasswordInput } from '@/components/password-input'
 
 export default function CreatePasswordPage() {
   const router = useRouter()
@@ -44,8 +45,8 @@ export default function CreatePasswordPage() {
         <h1 className="text-3xl font-bold">Buat password</h1>
         <p className="mt-2 text-sm text-slate-600">Atur password Anda untuk melanjutkan ke dashboard.</p>
         <form className="mt-6 space-y-5" onSubmit={handleSubmit}>
-          <div><label htmlFor="password" className="mb-1 block text-sm font-medium">Password baru</label><input id="password" type="password" autoComplete="new-password" required value={password} onChange={(event) => setPassword(event.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" /></div>
-          <div><label htmlFor="confirm-password" className="mb-1 block text-sm font-medium">Konfirmasi password</label><input id="confirm-password" type="password" autoComplete="new-password" required value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" /></div>
+          <div><label htmlFor="password" className="mb-1 block text-sm font-medium">Password baru</label><PasswordInput id="password" autoComplete="new-password" required value={password} onChange={(event) => setPassword(event.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" /></div>
+          <div><label htmlFor="confirm-password" className="mb-1 block text-sm font-medium">Konfirmasi password</label><PasswordInput id="confirm-password" autoComplete="new-password" required value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" /></div>
           {error && <div role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</div>}
           <button disabled={loading} className="w-full rounded-lg bg-indigo-600 px-4 py-3 font-semibold text-white hover:bg-indigo-700 disabled:opacity-60">{loading ? 'Menyimpan...' : 'Simpan password'}</button>
         </form>

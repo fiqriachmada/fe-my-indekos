@@ -3,6 +3,7 @@
 import { FormEvent, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { PasswordInput } from '@/components/password-input'
 
 type AuthError = { code?: string; message?: string; status?: number }
 
@@ -43,9 +44,25 @@ export default function RegisterPage() {
         data: { first_name: firstName.trim(), last_name: lastName.trim(), display_name: displayName },
       },
     })
+    if (signUpError?.code === 'user_already_exists') {
+      // Email exists: resend the activation email. If the account is already active, resend
+      // returns an error and we point the user to login instead.
+      const { error: resendError } = await supabase.auth.resend({
+        type: 'signup',
+        email: email.trim(),
+        options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=/dashboard` },
+      })
+      setLoading(false)
+      if (resendError) {
+        setError(getRateLimitMessage(resendError) ?? 'Email sudah terdaftar dan aktif. Silakan masuk.')
+        return
+      }
+      setMessage('Email sudah terdaftar tetapi belum diaktivasi. Kami telah mengirim ulang email aktivasi, silakan cek inbox Anda.')
+      return
+    }
     setLoading(false)
     if (signUpError) {
-      setError(getRateLimitMessage(signUpError) ?? (signUpError.code === 'user_already_exists' ? 'Email sudah terdaftar.' : 'Pendaftaran belum berhasil. Silakan periksa data Anda.'))
+      setError(getRateLimitMessage(signUpError) ?? 'Pendaftaran belum berhasil. Silakan periksa data Anda.')
       return
     }
     if (data.session) {
@@ -53,7 +70,13 @@ export default function RegisterPage() {
       router.refresh()
       return
     }
-    setMessage('Akun berhasil dibuat. Silakan cek email untuk mengaktivasi akun sebelum login.')
+    // Already-active accounts come back with no identities (Supabase hides existence).
+    if (data.user && data.user.identities?.length === 0) {
+      setError('Email sudah terdaftar dan aktif. Silakan masuk.')
+      return
+    }
+    // For an existing unconfirmed account Supabase resends the activation email on signUp.
+    setMessage('Silakan cek email untuk mengaktivasi akun sebelum login. Jika email ini pernah mendaftar dan belum aktif, email aktivasi telah dikirim ulang.')
   }
 
   return (
@@ -68,8 +91,8 @@ export default function RegisterPage() {
             <div><label htmlFor="lastName" className="mb-1 block text-sm font-medium">Nama belakang</label><input id="lastName" value={lastName} onChange={(event) => setLastName(event.target.value)} className="w-full rounded-lg border border-slate-300 bg-transparent px-3 py-2.5 outline-none focus:border-indigo-500" /></div>
           </div>
           <div><label htmlFor="email" className="mb-1 block text-sm font-medium">Email</label><input id="email" type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} className="w-full rounded-lg border border-slate-300 bg-transparent px-3 py-2.5 outline-none focus:border-indigo-500" placeholder="nama@email.com" /></div>
-          <div><label htmlFor="password" className="mb-1 block text-sm font-medium">Password</label><input id="password" type="password" autoComplete="new-password" required value={password} onChange={(event) => setPassword(event.target.value)} className="w-full rounded-lg border border-slate-300 bg-transparent px-3 py-2.5 outline-none focus:border-indigo-500" placeholder="Minimal 8 karakter" /></div>
-          <div><label htmlFor="confirmPassword" className="mb-1 block text-sm font-medium">Konfirmasi password</label><input id="confirmPassword" type="password" autoComplete="new-password" required value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} className="w-full rounded-lg border border-slate-300 bg-transparent px-3 py-2.5 outline-none focus:border-indigo-500" /></div>
+          <div><label htmlFor="password" className="mb-1 block text-sm font-medium">Password</label><PasswordInput id="password" autoComplete="new-password" required value={password} onChange={(event) => setPassword(event.target.value)} className="w-full rounded-lg border border-slate-300 bg-transparent px-3 py-2.5 outline-none focus:border-indigo-500" placeholder="Minimal 8 karakter" /></div>
+          <div><label htmlFor="confirmPassword" className="mb-1 block text-sm font-medium">Konfirmasi password</label><PasswordInput id="confirmPassword" autoComplete="new-password" required value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} className="w-full rounded-lg border border-slate-300 bg-transparent px-3 py-2.5 outline-none focus:border-indigo-500" /></div>
           {error && <div role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-200">{error}</div>}
           {message && <div role="status" className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-200">{message}</div>}
           <button type="submit" disabled={loading} className="w-full rounded-lg bg-indigo-600 px-4 py-3 font-semibold text-white hover:bg-indigo-700 disabled:opacity-60">{loading ? 'Mendaftarkan...' : 'Daftar'}</button>

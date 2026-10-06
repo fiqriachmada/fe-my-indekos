@@ -42,6 +42,23 @@ export default async function DashboardPage() {
   const propertyList = [...properties.values()]
   const rooms = (roomRes.data ?? []).map((r) => r.room).filter((r): r is RoomRow => !!r)
 
+  // Occupants per property: distinct users in room_members of the property's rooms.
+  const occupantCount = new Map<string, number>()
+  if (propertyList.length > 0) {
+    const { data: roomRows } = await supabase
+      .from('rooms')
+      .select('property_id, room_members(user_id)')
+      .in('property_id', propertyList.map(({ property }) => property.id))
+      .returns<{ property_id: string; room_members: { user_id: string }[] }[]>()
+    const perProperty = new Map<string, Set<string>>()
+    for (const r of roomRows ?? []) {
+      const set = perProperty.get(r.property_id) ?? new Set<string>()
+      for (const m of r.room_members) set.add(m.user_id)
+      perProperty.set(r.property_id, set)
+    }
+    for (const [id, set] of perProperty) occupantCount.set(id, set.size)
+  }
+
   const error = ownedRes.error ?? memberRes.error ?? roomRes.error
 
   return (
@@ -68,6 +85,7 @@ export default async function DashboardPage() {
                   <div>
                     <p className="font-medium">{property.name}</p>
                     {property.location && <p className="text-sm text-muted-foreground">{property.location}</p>}
+                    <p className="text-sm text-muted-foreground">{occupantCount.get(property.id) ?? 0} occupant</p>
                   </div>
                   <div className="flex gap-2">
                     {[...roles].map((role) => (

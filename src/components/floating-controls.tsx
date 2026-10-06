@@ -36,6 +36,12 @@ export default function FloatingControls() {
     }
   }, [theme])
 
+  useEffect(() => {
+    const onThemeChange = (event: Event) => setTheme((event as CustomEvent<Theme>).detail)
+    window.addEventListener("my-indekos-theme-change", onThemeChange)
+    return () => window.removeEventListener("my-indekos-theme-change", onThemeChange)
+  }, [])
+
   function chooseTheme(value: Theme) {
     setTheme(value)
     window.localStorage.setItem("my-indekos-theme", value)
@@ -51,7 +57,7 @@ export default function FloatingControls() {
 
   const options = [["light", "Light", SunIcon], ["dark", "Dark", MoonIcon], ["system", "System", ComputerDesktopIcon]] as const
   const ActiveIcon = options.find(([value]) => value === theme)?.[2] ?? ComputerDesktopIcon
-  const links = user ? [{ href: "/dashboard", label: "Dashboard" }, { href: "/profile", label: "Profile" }] : [{ href: "/login", label: "Login" }, { href: "/register", label: "Register" }]
+  const links = user ? [{ href: "/dashboard", label: "Dashboard" }, { href: "/profile", label: "Profile" }, { href: "/settings", label: "Settings" }] : [{ href: "/login", label: "Login" }, { href: "/register", label: "Register" }]
   const visibleLinks = links.filter((link) => link.href !== pathname)
 
   return (

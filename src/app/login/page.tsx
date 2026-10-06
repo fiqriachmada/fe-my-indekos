@@ -3,6 +3,7 @@
 import { FormEvent, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { PasswordInput } from '@/components/password-input'
 
 type AuthError = { code?: string; message?: string; status?: number }
 
@@ -81,7 +82,7 @@ export default function LoginPage() {
               <label htmlFor="password" className="block text-sm font-medium">Password</label>
               <a href="/forgot-password" className="text-sm font-medium text-indigo-600 hover:text-indigo-500">Lupa password?</a>
             </div>
-            <input id="password" type="password" autoComplete="current-password" required value={password} onChange={(event) => setPassword(event.target.value)} className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" placeholder="Masukkan password" />
+            <PasswordInput id="password" autoComplete="current-password" required value={password} onChange={(event) => setPassword(event.target.value)} className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" placeholder="Masukkan password" />
           </div>
 
           {error && <div role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</div>}
@@ -95,6 +96,7 @@ export default function LoginPage() {
 
           <button type="submit" disabled={loading} className="w-full rounded-lg bg-indigo-600 px-4 py-3 font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60">{loading ? 'Memproses...' : 'Masuk'}</button>
         </form>
+        <p className="mt-6 text-center text-sm text-muted-foreground">Belum punya akun? <a href="/register" className="font-semibold text-indigo-600 hover:text-indigo-500">Daftar</a></p>
       </div>
     </main>
   )
