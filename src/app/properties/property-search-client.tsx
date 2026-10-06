@@ -16,7 +16,6 @@ import {
   X,
   AlertCircle,
   Sparkles,
-  HelpCircle,
 } from 'lucide-react'
 
 type RoomItem = {
@@ -579,7 +578,7 @@ export default function PropertySearchClient({
                         return (
                           <div className="rounded-lg bg-amber-50 p-2.5 text-xs text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
                             Saat ini belum ada kamar kosong spesifik. Anda dapat memilih opsi{' '}
-                            <strong>"Skip Pilih Kamar"</strong> untuk mendaftar antrean/kamar acak ke pemilik.
+                            <strong>&quot;Skip Pilih Kamar&quot;</strong> untuk mendaftar antrean/kamar acak ke pemilik.
                           </div>
                         )
                       }

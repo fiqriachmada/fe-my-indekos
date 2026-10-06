@@ -53,10 +53,18 @@ export default function FloatingControls() {
 
   // Realtime notification subscription
   useEffect(() => {
+    let active = true
+
     if (!user) {
-      setNotifications([])
-      setUnreadCount(0)
-      return
+      queueMicrotask(() => {
+        if (active) {
+          setNotifications([])
+          setUnreadCount(0)
+        }
+      })
+      return () => {
+        active = false
+      }
     }
 
     const supabase = createClient()
