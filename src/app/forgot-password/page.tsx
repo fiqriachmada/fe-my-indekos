@@ -6,7 +6,15 @@ import { createClient } from '@/lib/supabase/client'
 
 type AuthError = { code?: string; message?: string; status?: number }
 
-const APP_URL = 'https://my-indekos.vercel.app'
+const PRODUCTION_APP_URL = 'https://my-indekos.vercel.app'
+
+function getAppUrl() {
+  if (typeof window !== 'undefined' && window.location.origin !== 'http://localhost:3000') {
+    return window.location.origin
+  }
+
+  return process.env.NEXT_PUBLIC_APP_URL ?? PRODUCTION_APP_URL
+}
 
 function getRateLimitMessage(authError: AuthError) {
   const isRateLimited = authError.status === 429 || authError.code?.includes('rate_limit') || authError.code?.includes('over_')
@@ -33,8 +41,10 @@ export default function ForgotPasswordPage() {
     setError(null)
 
     const supabase = createClient()
+    const appUrl = getAppUrl()
+    const resetUrl = `${appUrl}/auth/callback?next=/create-password`
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: `${APP_URL}/auth/callback?next=/create-password`,
+      redirectTo: resetUrl,
     })
     setLoading(false)
 
@@ -56,7 +66,7 @@ export default function ForgotPasswordPage() {
           <div className="mt-6 space-y-4" role="status">
             <p className="text-sm text-slate-600">Link reset password telah dikirim ke <strong className="text-slate-800">{email}</strong>.</p>
             <p className="text-sm text-slate-600">Buka email tersebut lalu klik link <strong>Reset password</strong> untuk membuat password baru.</p>
-            <p className="break-all rounded-lg bg-slate-100 p-3 text-xs text-slate-600">Link tujuan: {APP_URL}/create-password</p>
+            <p className="break-all rounded-lg bg-slate-100 p-3 text-xs text-slate-600">Link callback: {getAppUrl()}/auth/callback?next=/create-password</p>
             <button type="button" onClick={() => { setSent(false); setError(null) }} className="text-sm font-medium text-indigo-600 hover:text-indigo-800">Kirim ke email lain</button>
           </div>
         ) : (
