@@ -35,11 +35,11 @@ export default function CreatePasswordPage() {
     router.refresh()
   }
 
-  if (checking) return <main className="flex min-h-screen items-center justify-center bg-slate-100 text-slate-600">Memeriksa sesi...</main>
+  if (checking) return <main className="flex min-h-screen items-center justify-center bg-background text-slate-600">Memeriksa sesi...</main>
 
   return (
-    <main className="min-h-screen bg-slate-100 px-4 py-12 text-slate-900">
-      <div className="mx-auto w-full max-w-md rounded-2xl bg-white p-8 shadow-lg">
+    <main className="min-h-screen bg-background px-4 py-12 text-foreground">
+      <div className="mx-auto w-full max-w-md rounded-2xl border border-border bg-card p-8 text-card-foreground shadow-lg transition-colors">
         <p className="mb-2 text-sm font-semibold uppercase tracking-wider text-indigo-600">My Indekos</p>
         <h1 className="text-3xl font-bold">Buat password</h1>
         <p className="mt-2 text-sm text-slate-600">Atur password Anda untuk melanjutkan ke dashboard.</p>

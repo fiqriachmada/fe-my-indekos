@@ -1,7 +1,8 @@
 "use client";
 
-import React, { Fragment } from "react";
+import React, { Fragment, useEffect, useState } from "react";
 import { Popover, Transition } from "@headlessui/react";
+import { createClient } from "@/lib/supabase/client";
 import {
   Bars3Icon as MenuIcon,
   XMarkIcon as XIcon,
@@ -47,11 +48,32 @@ const navigation = [
   { name: "Company", href: "#" },
 ];
 
+function useAuthPath() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data }) => {
+      setIsAuthenticated(Boolean(data.user))
+    })
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(Boolean(session?.user))
+    })
+
+    return () => authListener.subscription.unsubscribe()
+  }, [])
+
+  return isAuthenticated ? "/dashboard" : "/login"
+}
+
 function Hero() {
+  const authPath = useAuthPath()
+
   return (
-    <div className="relative bg-white overflow-hidden">
+    <div className="relative overflow-hidden bg-background text-foreground transition-colors">
       <div className="max-w-7xl mx-auto">
-        <div className="relative z-10 pb-8 bg-white sm:pb-16 md:pb-20 lg:max-w-2xl lg:w-full lg:pb-28 xl:pb-32">
+        <div className="relative z-10 bg-background pb-8 sm:pb-16 md:pb-20 lg:max-w-2xl lg:w-full lg:pb-28 xl:pb-32">
           <svg
             className="hidden lg:block absolute right-0 inset-y-0 h-full w-48 text-white transform translate-x-1/2"
             fill="currentColor"
@@ -79,7 +101,7 @@ function Hero() {
                       />
                     </a>
                     <div className="-mr-2 flex items-center md:hidden">
-                      <Popover.Button className="bg-white rounded-md p-2 inline-flex items-center justify-center text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500">
+                      <Popover.Button className="rounded-md bg-background p-2 inline-flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500">
                         <span className="sr-only">Open main menu</span>
                         <MenuIcon className="h-6 w-6" aria-hidden="true" />
                       </Popover.Button>
@@ -91,12 +113,12 @@ function Hero() {
                     <a
                       key={item.name}
                       href={item.href}
-                      className="font-medium text-gray-500 hover:text-gray-900"
+                      className="font-medium text-muted-foreground hover:text-foreground"
                     >
                       {item.name}
                     </a>
                   ))}
-                  <a href="/login" className="font-medium text-indigo-600 hover:text-indigo-500">Log in</a>
+                  <a href={authPath} className="font-medium text-indigo-600 hover:text-indigo-500">Log in</a>
                 </div>
               </nav>
             </div>
@@ -114,7 +136,7 @@ function Hero() {
                 focus
                 className="absolute z-10 top-0 inset-x-0 p-2 transition transform origin-top-right md:hidden"
               >
-                <div className="rounded-lg shadow-md bg-white ring-1 ring-black ring-opacity-5 overflow-hidden">
+                <div className="rounded-lg bg-card text-card-foreground shadow-md ring-1 ring-border overflow-hidden">
                   <div className="px-5 pt-4 flex items-center justify-between">
                     <div>
                       <img
@@ -124,7 +146,7 @@ function Hero() {
                       />
                     </div>
                     <div className="-mr-2">
-                      <Popover.Button className="bg-white rounded-md p-2 inline-flex items-center justify-center text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500">
+                      <Popover.Button className="rounded-md bg-background p-2 inline-flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500">
                         <span className="sr-only">Close main menu</span>
                         <XIcon className="h-6 w-6" aria-hidden="true" />
                       </Popover.Button>
@@ -141,7 +163,7 @@ function Hero() {
                       </a>
                     ))}
                   </div>
-                  <a href="/login" className="block w-full px-5 py-3 text-center font-medium text-indigo-600 bg-gray-50 hover:bg-gray-100">Log in</a>
+                  <a href={authPath} className="block w-full px-5 py-3 text-center font-medium text-indigo-600 bg-gray-50 hover:bg-gray-100">Log in</a>
                 </div>
               </Popover.Panel>
             </Transition>
@@ -149,20 +171,20 @@ function Hero() {
 
           <main className="mt-10 mx-auto max-w-7xl px-4 sm:mt-12 sm:px-6 md:mt-16 lg:mt-20 lg:px-8 xl:mt-28">
             <div className="sm:text-center lg:text-left">
-              <h1 className="text-4xl tracking-tight font-extrabold text-gray-900 sm:text-5xl md:text-6xl">
+              <h1 className="text-4xl tracking-tight font-extrabold text-foreground sm:text-5xl md:text-6xl">
                 <span className="block xl:inline">Data to enrich your</span>{" "}
                 <span className="block text-indigo-600 xl:inline">
                   online business
                 </span>
               </h1>
-              <p className="mt-3 text-base text-gray-500 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
+              <p className="mt-3 text-base text-muted-foreground sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
                 Anim aute id magna aliqua ad ad non deserunt sunt. Qui irure qui
                 lorem cupidatat commodo. Elit sunt amet fugiat veniam occaecat
                 fugiat aliqua.
               </p>
               <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start">
                 <div className="rounded-md shadow">
-                  <a href="/login" className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 md:py-4 md:text-lg md:px-10">Get started</a>
+                  <a href={authPath} className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 md:py-4 md:text-lg md:px-10">Get started</a>
                 </div>
                 <div className="mt-3 sm:mt-0 sm:ml-3">
                   <a
@@ -190,7 +212,7 @@ function Hero() {
 
 function Feature() {
   return (
-    <div className="py-12 bg-slate-100">
+    <div className="bg-background py-12 text-foreground transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="lg:text-center">
           <h2 className="text-base text-indigo-600 font-semibold tracking-wide uppercase">
@@ -230,8 +252,10 @@ function Feature() {
 }
 
 function GetStarted() {
+  const authPath = useAuthPath()
+
   return (
-    <div className="bg-slate-200">
+    <div className="bg-muted">
       <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:py-16 lg:px-8 lg:flex lg:items-center lg:justify-between">
         <h2 className="text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl">
           <span className="block">Ready to dive in?</span>
@@ -241,12 +265,12 @@ function GetStarted() {
         </h2>
         <div className="mt-8 flex lg:mt-0 lg:flex-shrink-0">
           <div className="inline-flex rounded-md shadow">
-            <a href="/login" className="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">Get started</a>
+            <a href={authPath} className="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">Get started</a>
           </div>
           <div className="ml-3 inline-flex rounded-md shadow">
             <a
               href="#"
-              className="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-indigo-600 bg-white hover:bg-indigo-50"
+              className="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-indigo-600 bg-card hover:bg-muted"
             >
               Learn more
             </a>
@@ -413,6 +437,7 @@ export default function App() {
       <Feature />
       <GetStarted />
       <Footer />
+     
     </div>
   );
 }
