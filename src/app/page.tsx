@@ -136,7 +136,7 @@ function Hero() {
                 focus
                 className="absolute z-10 top-0 inset-x-0 p-2 transition transform origin-top-right md:hidden"
               >
-                <div className="rounded-lg shadow-md bg-white ring-1 ring-black ring-opacity-5 overflow-hidden">
+                <div className="rounded-lg bg-card text-card-foreground shadow-md ring-1 ring-border overflow-hidden">
                   <div className="px-5 pt-4 flex items-center justify-between">
                     <div>
                       <img
@@ -212,7 +212,7 @@ function Hero() {
 
 function Feature() {
   return (
-    <div className="py-12 bg-slate-100">
+    <div className="bg-background py-12 text-foreground transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="lg:text-center">
           <h2 className="text-base text-indigo-600 font-semibold tracking-wide uppercase">
@@ -255,7 +255,7 @@ function GetStarted() {
   const authPath = useAuthPath()
 
   return (
-    <div className="bg-slate-200">
+    <div className="bg-muted">
       <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:py-16 lg:px-8 lg:flex lg:items-center lg:justify-between">
         <h2 className="text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl">
           <span className="block">Ready to dive in?</span>
@@ -270,7 +270,7 @@ function GetStarted() {
           <div className="ml-3 inline-flex rounded-md shadow">
             <a
               href="#"
-              className="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-indigo-600 bg-white hover:bg-indigo-50"
+              className="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-indigo-600 bg-card hover:bg-muted"
             >
               Learn more
             </a>

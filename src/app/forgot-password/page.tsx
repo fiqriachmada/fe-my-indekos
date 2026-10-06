@@ -9,11 +9,7 @@ type AuthError = { code?: string; message?: string; status?: number }
 const PRODUCTION_APP_URL = 'https://my-indekos.vercel.app'
 
 function getAppUrl() {
-  if (typeof window !== 'undefined' && window.location.origin !== 'http://localhost:3000') {
-    return window.location.origin
-  }
-
-  return process.env.NEXT_PUBLIC_APP_URL ?? PRODUCTION_APP_URL
+  return PRODUCTION_APP_URL
 }
 
 function getRateLimitMessage(authError: AuthError) {
@@ -57,8 +53,8 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-100 px-4 py-12 text-slate-900">
-      <div className="mx-auto w-full max-w-md rounded-2xl bg-white p-8 shadow-lg">
+    <main className="min-h-screen bg-background px-4 py-12 text-foreground transition-colors">
+      <div className="mx-auto w-full max-w-md rounded-2xl border border-border bg-card p-8 text-card-foreground shadow-lg transition-colors">
         <a href="/login" className="text-sm font-medium text-indigo-600 hover:text-indigo-800">← Kembali ke login</a>
 
         <h1 className="mt-8 text-3xl font-bold">Lupa password?</h1>
@@ -66,7 +62,7 @@ export default function ForgotPasswordPage() {
           <div className="mt-6 space-y-4" role="status">
             <p className="text-sm text-slate-600">Link reset password telah dikirim ke <strong className="text-slate-800">{email}</strong>.</p>
             <p className="text-sm text-slate-600">Buka email tersebut lalu klik link <strong>Reset password</strong> untuk membuat password baru.</p>
-            <p className="break-all rounded-lg bg-slate-100 p-3 text-xs text-slate-600">Link callback: {getAppUrl()}/auth/callback?next=/create-password</p>
+            <p className="break-all rounded-lg bg-muted p-3 text-xs text-muted-foreground">Link callback: {getAppUrl()}/auth/callback?next=/create-password</p>
             <button type="button" onClick={() => { setSent(false); setError(null) }} className="text-sm font-medium text-indigo-600 hover:text-indigo-800">Kirim ke email lain</button>
           </div>
         ) : (
