@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { RoomUtilities } from '@/components/room-utilities'
 
 export const metadata = {
   title: 'Detail Kamar — My Indekos',
@@ -326,6 +327,11 @@ export default async function RoomDetailPage({
             </div>
           </section>
         </div>
+
+        {/* Riwayat pengisian token PLN & pembayaran PDAM (hanya penghuni / pengelola) */}
+        {(isCurrentOccupant || property?.owner_id === user.id || Boolean(userMembershipRes.data)) && (
+          <RoomUtilities roomId={room.id} />
+        )}
 
         {/* Kartu Status Hunian & Hak Akses */}
         <div className="mt-6 rounded-2xl border border-emerald-500/20 bg-emerald-50/50 p-6 text-foreground dark:bg-emerald-950/20 shadow-sm">
