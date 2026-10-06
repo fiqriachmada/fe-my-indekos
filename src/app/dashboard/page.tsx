@@ -36,7 +36,7 @@ export default async function DashboardPage() {
     // Notifications / room applications for this user (safely handled)
     admin
       .from('notifications')
-      .select('id, title, description, property_id, room_id, status, type, created_at, property:properties(name)')
+      .select('id, title, description, property_id, room_id, status, type, created_at, property:properties(id, name, rooms(id, name, is_active, occupant_member_id, room_members(user_id)))')
       .eq('to_user_id', user.id)
       .eq('status', 'pending')
       .order('created_at', { ascending: false })

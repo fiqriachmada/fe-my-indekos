@@ -12,7 +12,6 @@ import {
   ShieldCheck,
   AlertCircle,
   UserCheck,
-  Calendar,
   Sparkles,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
