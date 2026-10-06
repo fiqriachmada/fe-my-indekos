@@ -1,11 +1,48 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 
+type PropertyRow = { id: string; name: string; location: string | null }
+type PropertyMemberRow = { role: { name: string } | null; property: PropertyRow | null }
+type RoomRow = { id: string; name?: string | null; room_number?: string | null; property: { id: string; name: string } | null }
+type RoomMemberRow = { room: RoomRow | null }
+
 export default async function DashboardPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) redirect('/login')
+
+  const [ownedRes, memberRes, roomRes] = await Promise.all([
+    // Properties the user owns directly (owner_id), even without a membership row.
+    supabase.from('properties').select('id, name, location').eq('owner_id', user.id),
+    // Property-scoped roles: owner, property-admin, guard.
+    supabase
+      .from('property_members')
+      .select('role:roles(name), property:properties(id, name, location)')
+      .eq('user_id', user.id)
+      .returns<PropertyMemberRow[]>(),
+    // Room-scoped role: occupant. Independent of property roles.
+    supabase
+      .from('room_members')
+      .select('room:rooms(*, property:properties(id, name))')
+      .eq('user_id', user.id)
+      .returns<RoomMemberRow[]>(),
+  ])
+
+  // Merge owner_id properties with membership roles, one entry per property.
+  const properties = new Map<string, { property: PropertyRow; roles: Set<string> }>()
+  const add = (property: PropertyRow, role: string) => {
+    const entry = properties.get(property.id) ?? { property, roles: new Set<string>() }
+    entry.roles.add(role)
+    properties.set(property.id, entry)
+  }
+  for (const p of (ownedRes.data ?? []) as PropertyRow[]) add(p, 'owner')
+  for (const m of memberRes.data ?? []) if (m.property) add(m.property, m.role?.name ?? 'member')
+
+  const propertyList = [...properties.values()]
+  const rooms = (roomRes.data ?? []).map((r) => r.room).filter((r): r is RoomRow => !!r)
+
+  const error = ownedRes.error ?? memberRes.error ?? roomRes.error
 
   return (
     <main className="min-h-screen bg-background px-6 py-12 text-foreground transition-colors">
@@ -13,10 +50,56 @@ export default async function DashboardPage() {
         <p className="text-sm font-semibold uppercase tracking-wider text-indigo-600">My Indekos</p>
         <h1 className="mt-2 text-4xl font-bold">Dashboard</h1>
         <p className="mt-3 text-muted-foreground">Selamat datang kembali, {user.email}.</p>
-        <div className="mt-8 rounded-2xl border border-border bg-card p-6 text-card-foreground shadow-sm transition-colors">
-          <h2 className="text-xl font-semibold">Akun Anda aktif</h2>
-          <p className="mt-2 text-sm text-muted-foreground">Anda berhasil masuk ke protected route.</p>
-        </div>
+
+        {error && (
+          <p className="mt-6 rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-700">
+            Gagal memuat data: {error.message}
+          </p>
+        )}
+
+        <section className="mt-8 rounded-2xl border border-border bg-card p-6 text-card-foreground shadow-sm transition-colors">
+          <h2 className="text-xl font-semibold">Properti yang saya kelola</h2>
+          {propertyList.length === 0 ? (
+            <p className="mt-2 text-sm text-muted-foreground">Belum ada properti.</p>
+          ) : (
+            <ul className="mt-4 divide-y divide-border">
+              {propertyList.map(({ property, roles }) => (
+                <li key={property.id} className="flex items-center justify-between gap-4 py-3">
+                  <div>
+                    <p className="font-medium">{property.name}</p>
+                    {property.location && <p className="text-sm text-muted-foreground">{property.location}</p>}
+                  </div>
+                  <div className="flex gap-2">
+                    {[...roles].map((role) => (
+                      <span key={role} className="rounded-full bg-indigo-100 px-3 py-1 text-xs font-medium text-indigo-700">
+                        {role}
+                      </span>
+                    ))}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="mt-6 rounded-2xl border border-border bg-card p-6 text-card-foreground shadow-sm transition-colors">
+          <h2 className="text-xl font-semibold">Kamar yang saya sewa</h2>
+          {rooms.length === 0 ? (
+            <p className="mt-2 text-sm text-muted-foreground">Belum ada kamar yang disewa.</p>
+          ) : (
+            <ul className="mt-4 divide-y divide-border">
+              {rooms.map((room) => (
+                <li key={room.id} className="flex items-center justify-between gap-4 py-3">
+                  <div>
+                    <p className="font-medium">{room.name ?? room.room_number ?? room.id}</p>
+                    {room.property && <p className="text-sm text-muted-foreground">{room.property.name}</p>}
+                  </div>
+                  <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">occupant</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       </div>
     </main>
   )
