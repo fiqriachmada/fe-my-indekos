@@ -110,6 +110,26 @@ export async function POST(request: Request) {
       }
     } else {
       // Jika user memilih untuk skip pilih kamar
+      // Cek apakah seluruh kamar pada properti ini sudah terisi penuh
+      const { data: propRooms } = await admin
+        .from('rooms')
+        .select('id, occupant_member_id, is_active, room_members(user_id)')
+        .eq('property_id', propertyId)
+
+      const available = (propRooms ?? []).filter(
+        (r) =>
+          r.is_active !== false &&
+          !Boolean(r.occupant_member_id) &&
+          (r.room_members?.length ?? 0) === 0
+      )
+
+      if ((propRooms ?? []).length > 0 && available.length === 0) {
+        return NextResponse.json(
+          { error: 'Seluruh unit kamar pada properti ini sudah terisi penuh.' },
+          { status: 400 }
+        )
+      }
+
       // Cek apakah user sudah punya pengajuan umum pending untuk properti ini
       const { data: existingPropNotif } = await admin
         .from('notifications')

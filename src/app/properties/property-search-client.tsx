@@ -115,6 +115,33 @@ export default function PropertySearchClient({
       return
     }
 
+    const roomsList = property.rooms ?? []
+    const availableRooms = roomsList.filter(
+      (r) => r.is_active !== false && !Boolean(r.occupant_member_id) && (r.room_members?.length ?? 0) === 0
+    )
+
+    // Jika properti sudah terisi penuh (semua kamar sudah ada penghuni)
+    if (roomsList.length > 0 && availableRooms.length === 0) {
+      toast.error(`Kamar di ${property.name} sudah terisi penuh!`, {
+        description: 'Seluruh unit kamar pada properti ini saat ini sudah terisi oleh penghuni.',
+      })
+      return
+    }
+
+    if (initialRoom) {
+      const isInitialOccupied =
+        initialRoom.is_active === false ||
+        Boolean(initialRoom.occupant_member_id) ||
+        (initialRoom.room_members?.length ?? 0) > 0
+
+      if (isInitialOccupied) {
+        toast.error(`Kamar ${initialRoom.name ?? ''} sudah terisi!`, {
+          description: 'Silakan pilih kamar lain yang masih berstatus kosong.',
+        })
+        return
+      }
+    }
+
     setSelectedProperty(property)
     setApplicationNote('')
     setSubmitError(null)
@@ -124,10 +151,6 @@ export default function PropertySearchClient({
       setSelectionMode('pick')
       setSelectedRoomId(initialRoom.id)
     } else {
-      // Cek apakah ada kamar tersedia
-      const availableRooms = (property.rooms ?? []).filter(
-        (r) => !Boolean(r.occupant_member_id) && (r.room_members?.length ?? 0) === 0
-      )
       if (availableRooms.length > 0) {
         setSelectionMode('pick')
         setSelectedRoomId(availableRooms[0].id)
@@ -171,7 +194,9 @@ export default function PropertySearchClient({
       // Tandai pengajuan berhasil
       const key = chosenRoomId ? `${selectedProperty.id}_${chosenRoomId}` : selectedProperty.id
       setAppliedKeys((prev) => new Set(prev).add(key))
-      setSubmitSuccess(data.message || 'Pengajuan sewa berhasil dikirim!')
+      const successMsg = data.message || 'Pengajuan sewa berhasil dikirim!'
+      setSubmitSuccess(successMsg)
+      toast.success(successMsg)
 
       setTimeout(() => {
         setModalOpen(false)
@@ -179,9 +204,9 @@ export default function PropertySearchClient({
         router.refresh()
       }, 1800)
     } catch (err: unknown) {
-      setSubmitError(
-        err instanceof Error ? err.message : 'Terjadi kesalahan saat mengajukan.'
-      )
+      const errMsg = err instanceof Error ? err.message : 'Terjadi kesalahan saat mengajukan.'
+      setSubmitError(errMsg)
+      toast.error(errMsg)
     } finally {
       setIsSubmitting(false)
     }
