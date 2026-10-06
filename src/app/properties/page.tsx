@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
 import PropertySearchClient from "./property-search-client"
 
 export const metadata = {
@@ -13,8 +14,10 @@ export default async function PropertiesPage() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Ambil data properti dan relasi kamar
-  const { data: properties, error } = await supabase
+  const admin = createAdminClient()
+
+  // Ambil data properti dan relasi kamar menggunakan admin client agar rooms tidak tersembunyi oleh RLS
+  const { data: properties, error } = await admin
     .from("properties")
     .select(`
       id,

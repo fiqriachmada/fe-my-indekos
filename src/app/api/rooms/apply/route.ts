@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function POST(request: Request) {
   try {
@@ -25,8 +26,10 @@ export async function POST(request: Request) {
       )
     }
 
+    const admin = createAdminClient()
+
     // 1. Ambil data properti & pemilik
-    const { data: property, error: propError } = await supabase
+    const { data: property, error: propError } = await admin
       .from('properties')
       .select('id, name, owner_id')
       .eq('id', propertyId)
@@ -58,7 +61,7 @@ export async function POST(request: Request) {
 
     // 2. Jika pemohon memilih kamar tertentu
     if (roomId) {
-      const { data: room, error: roomError } = await supabase
+      const { data: room, error: roomError } = await admin
         .from('rooms')
         .select('id, name, occupant_member_id, is_active, room_members(user_id)')
         .eq('id', roomId)
@@ -87,7 +90,7 @@ export async function POST(request: Request) {
       targetRoomId = room.id
 
       // Cek apakah user sudah punya pengajuan pending untuk kamar ini
-      const { data: existingRoomNotif } = await supabase
+      const { data: existingRoomNotif } = await admin
         .from('notifications')
         .select('id')
         .eq('from_user_id', user.id)
@@ -108,7 +111,7 @@ export async function POST(request: Request) {
     } else {
       // Jika user memilih untuk skip pilih kamar
       // Cek apakah user sudah punya pengajuan umum pending untuk properti ini
-      const { data: existingPropNotif } = await supabase
+      const { data: existingPropNotif } = await admin
         .from('notifications')
         .select('id')
         .eq('from_user_id', user.id)
@@ -142,7 +145,7 @@ export async function POST(request: Request) {
       ? `User ${userIdentifier} mengajukan sewa untuk kamar ${targetRoomName}. ${noteText}`.trim()
       : `User ${userIdentifier} mengajukan sewa untuk properti ${property.name} (skip pilih kamar / penempatan ditentukan pemilik). ${noteText}`.trim()
 
-    const { error: insertError } = await supabase.from('notifications').insert({
+    const { error: insertError } = await admin.from('notifications').insert({
       to_user_id: property.owner_id,
       from_user_id: user.id,
       property_id: property.id,

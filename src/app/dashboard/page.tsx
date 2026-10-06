@@ -1,12 +1,13 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { InvitationActions, type Invitation } from './invitation-actions'
 
 type PropertyRow = { id: string; name: string; location: string | null }
 type PropertyMemberRow = { id: string; role: { name: string } | null; property: PropertyRow | null }
-type RoomRow = { id: string; name?: string | null; room_number?: string | null; property: { id: string; name: string } | null }
-type RoomMemberRow = { room: RoomRow | null }
+type RoomRow = { id: string; name?: string | null; property: { id: string; name: string } | null }
+type RoomMemberRow = { room_id?: string; room: RoomRow | null }
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -14,23 +15,25 @@ export default async function DashboardPage() {
 
   if (!user) redirect('/login')
 
+  const admin = createAdminClient()
+
   const [ownedRes, memberRes, roomRes, notifRes] = await Promise.all([
     // Properties the user owns directly (owner_id), even without a membership row.
-    supabase.from('properties').select('id, name, location').eq('owner_id', user.id),
+    admin.from('properties').select('id, name, location').eq('owner_id', user.id),
     // Property-scoped roles: owner, property-admin, guard, occupant.
-    supabase
+    admin
       .from('property_members')
       .select('id, role:roles(name), property:properties(id, name, location)')
       .eq('user_id', user.id)
       .returns<PropertyMemberRow[]>(),
     // Room-scoped role: occupant via room_members.
-    supabase
+    admin
       .from('room_members')
-      .select('room:rooms(*, property:properties(id, name))')
+      .select('room_id, room:rooms(id, name, property:properties(id, name))')
       .eq('user_id', user.id)
       .returns<RoomMemberRow[]>(),
     // Notifications / room applications for this user (safely handled)
-    supabase
+    admin
       .from('notifications')
       .select('id, title, description, property_id, room_id, status, type, created_at, property:properties(name)')
       .eq('to_user_id', user.id)
@@ -66,9 +69,9 @@ export default async function DashboardPage() {
   const userMemberIds = (memberRes.data ?? []).map((m) => m.id).filter(Boolean)
   let directAssignedRooms: RoomRow[] = []
   if (userMemberIds.length > 0) {
-    const { data: directRooms } = await supabase
+    const { data: directRooms } = await admin
       .from('rooms')
-      .select('id, name, room_number, property:properties(id, name)')
+      .select('id, name, property:properties(id, name)')
       .in('occupant_member_id', userMemberIds)
     directAssignedRooms = (directRooms ?? []) as unknown as RoomRow[]
   }
@@ -88,7 +91,7 @@ export default async function DashboardPage() {
   // Occupants per property: distinct users in room_members of the property's rooms.
   const occupantCount = new Map<string, number>()
   if (managedList.length > 0) {
-    const { data: roomRows } = await supabase
+    const { data: roomRows } = await admin
       .from('rooms')
       .select('property_id, room_members(user_id)')
       .in('property_id', managedList.map(({ property }) => property.id))
@@ -208,7 +211,7 @@ export default async function DashboardPage() {
               {rooms.map((room) => (
                 <li key={room.id} className="flex items-center justify-between gap-4 py-3">
                   <div>
-                    <p className="font-medium">{room.name ?? room.room_number ?? room.id}</p>
+                    <p className="font-medium">{room.name ?? room.id}</p>
                     {room.property && <p className="text-sm text-muted-foreground">{room.property.name}</p>}
                   </div>
                   <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
