@@ -42,6 +42,13 @@ export default function FloatingControls() {
     setMenu(null)
   }
 
+  async function handleLogout() {
+    await createClient().auth.signOut()
+    setMenu(null)
+    router.push("/login")
+    router.refresh()
+  }
+
   const options = [["light", "Light", SunIcon], ["dark", "Dark", MoonIcon], ["system", "System", ComputerDesktopIcon]] as const
   const ActiveIcon = options.find(([value]) => value === theme)?.[2] ?? ComputerDesktopIcon
   const links = user ? [{ href: "/dashboard", label: "Dashboard" }, { href: "/profile", label: "Profile" }] : [{ href: "/login", label: "Login" }, { href: "/register", label: "Register" }]
@@ -59,7 +66,7 @@ export default function FloatingControls() {
         <span className="h-5 w-px bg-slate-300/70 dark:bg-white/20" aria-hidden="true" />
         <div className="relative">
           <button type="button" aria-label="Buka navigasi" aria-expanded={menu === "navigation"} onClick={() => setMenu(menu === "navigation" ? null : "navigation")} className={`rounded-full p-2 text-slate-700 transition duration-300 hover:bg-white/70 dark:text-slate-100 dark:hover:bg-white/10 ${menu === "navigation" ? "rotate-90" : ""}`}><Bars3Icon className="h-5 w-5" aria-hidden="true" /></button>
-          {menu === "navigation" && <div className="absolute bottom-12 right-0 min-w-36 rounded-2xl border border-white/60 bg-white/95 p-1.5 shadow-xl backdrop-blur-xl dark:border-white/15 dark:bg-slate-900/95">{visibleLinks.length ? visibleLinks.map((link) => <button key={link.href} type="button" onClick={() => { setMenu(null); router.push(link.href) }} className="block w-full rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition hover:translate-x-1 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-white/10">{link.label}</button>) : <span className="block px-3 py-2 text-xs text-slate-500 dark:text-slate-400">Tidak ada menu lain</span>}</div>}
+          {menu === "navigation" && <div className="absolute bottom-12 right-0 min-w-36 rounded-2xl border border-white/60 bg-white/95 p-1.5 shadow-xl backdrop-blur-xl dark:border-white/15 dark:bg-slate-900/95">{visibleLinks.length ? visibleLinks.map((link) => <button key={link.href} type="button" onClick={() => { setMenu(null); router.push(link.href) }} className="block w-full rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition hover:translate-x-1 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-white/10">{link.label}</button>) : <span className="block px-3 py-2 text-xs text-slate-500 dark:text-slate-400">Tidak ada menu lain</span>}{user && <><span className="my-1 block h-px bg-slate-200 dark:bg-white/10" /><button type="button" onClick={handleLogout} className="block w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-red-600 transition hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-400/10">Log out</button></>}</div>}
         </div>
       </div>
     </div>
