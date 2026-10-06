@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { ArrowRight } from 'lucide-react'
 import { InvitationActions, type Invitation } from './invitation-actions'
 
 type PropertyRow = { id: string; name: string; location: string | null }
@@ -209,14 +210,32 @@ export default async function DashboardPage() {
           ) : (
             <ul className="mt-4 divide-y divide-border">
               {rooms.map((room) => (
-                <li key={room.id} className="flex items-center justify-between gap-4 py-3">
-                  <div>
-                    <p className="font-medium">{room.name ?? room.id}</p>
-                    {room.property && <p className="text-sm text-muted-foreground">{room.property.name}</p>}
+                <li key={room.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-3.5">
+                  <Link
+                    href={`/rooms/detail/${room.id}`}
+                    className="group block flex-1 focus:outline-none"
+                  >
+                    <p className="font-medium group-hover:text-primary transition-colors">
+                      {room.name ?? room.id}
+                    </p>
+                    {room.property && (
+                      <p className="text-sm text-muted-foreground group-hover:text-foreground/80 transition-colors">
+                        {room.property.name}
+                      </p>
+                    )}
+                  </Link>
+                  <div className="flex items-center gap-2 self-start sm:self-center">
+                    <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                      occupant aktif
+                    </span>
+                    <Link
+                      href={`/rooms/detail/${room.id}`}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-accent hover:text-accent-foreground transition shadow-2xs"
+                    >
+                      Detail
+                      <ArrowRight className="size-3" />
+                    </Link>
                   </div>
-                  <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
-                    occupant aktif
-                  </span>
                 </li>
               ))}
             </ul>
