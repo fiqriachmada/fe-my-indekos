@@ -18,9 +18,9 @@ export async function POST(request: Request) {
     const body = await request.json()
     const { propertyId, roomId, note } = body
 
-    if (!propertyId || !roomId) {
+    if (!propertyId) {
       return NextResponse.json(
-        { error: 'ID Properti dan ID Kamar wajib diisi.' },
+        { error: 'ID Properti wajib diisi.' },
         { status: 400 }
       )
     }
@@ -53,63 +53,102 @@ export async function POST(request: Request) {
       )
     }
 
-    // 2. Ambil data kamar
-    const { data: room, error: roomError } = await supabase
-      .from('rooms')
-      .select('id, name, occupant_member_id, is_active, room_members(user_id)')
-      .eq('id', roomId)
-      .single()
+    let targetRoomName: string | null = null
+    let targetRoomId: string | null = null
 
-    if (roomError || !room) {
-      return NextResponse.json(
-        { error: 'Kamar tidak ditemukan.' },
-        { status: 404 }
-      )
+    // 2. Jika pemohon memilih kamar tertentu
+    if (roomId) {
+      const { data: room, error: roomError } = await supabase
+        .from('rooms')
+        .select('id, name, occupant_member_id, is_active, room_members(user_id)')
+        .eq('id', roomId)
+        .eq('property_id', propertyId)
+        .single()
+
+      if (roomError || !room) {
+        return NextResponse.json(
+          { error: 'Kamar tidak ditemukan pada properti ini.' },
+          { status: 404 }
+        )
+      }
+
+      const isOccupied =
+        Boolean(room.occupant_member_id) ||
+        (Array.isArray(room.room_members) && room.room_members.length > 0)
+
+      if (isOccupied) {
+        return NextResponse.json(
+          { error: 'Kamar ini sudah terisi oleh penghuni lain.' },
+          { status: 400 }
+        )
+      }
+
+      targetRoomName = room.name
+      targetRoomId = room.id
+
+      // Cek apakah user sudah punya pengajuan pending untuk kamar ini
+      const { data: existingRoomNotif } = await supabase
+        .from('notifications')
+        .select('id')
+        .eq('from_user_id', user.id)
+        .eq('room_id', roomId)
+        .eq('type', 'room_application')
+        .eq('status', 'pending')
+        .maybeSingle()
+
+      if (existingRoomNotif) {
+        return NextResponse.json(
+          {
+            error:
+              'Anda sudah memiliki pengajuan sewa yang sedang diproses untuk kamar ini.',
+          },
+          { status: 400 }
+        )
+      }
+    } else {
+      // Jika user memilih untuk skip pilih kamar
+      // Cek apakah user sudah punya pengajuan umum pending untuk properti ini
+      const { data: existingPropNotif } = await supabase
+        .from('notifications')
+        .select('id')
+        .eq('from_user_id', user.id)
+        .eq('property_id', propertyId)
+        .is('room_id', null)
+        .eq('type', 'room_application')
+        .eq('status', 'pending')
+        .maybeSingle()
+
+      if (existingPropNotif) {
+        return NextResponse.json(
+          {
+            error:
+              'Anda sudah memiliki pengajuan sewa umum yang sedang diproses oleh pemilik untuk properti ini.',
+          },
+          { status: 400 }
+        )
+      }
     }
 
-    const isOccupied =
-      Boolean(room.occupant_member_id) ||
-      (Array.isArray(room.room_members) && room.room_members.length > 0)
-
-    if (isOccupied) {
-      return NextResponse.json(
-        { error: 'Kamar ini sudah memiliki penghuni.' },
-        { status: 400 }
-      )
-    }
-
-    // 3. Cek apakah user sudah punya pengajuan 'pending' untuk kamar ini
-    const { data: existingNotif, error: notifCheckError } = await supabase
-      .from('notifications')
-      .select('id, status')
-      .eq('from_user_id', user.id)
-      .eq('room_id', roomId)
-      .eq('type', 'room_application')
-      .eq('status', 'pending')
-      .maybeSingle()
-
-    if (existingNotif) {
-      return NextResponse.json(
-        {
-          error:
-            'Anda sudah memiliki pengajuan sewa yang sedang diproses oleh pemilik untuk kamar ini.',
-        },
-        { status: 400 }
-      )
-    }
-
-    // 4. Kirim notifikasi pengajuan sewa ke pemilik properti
-    const userIdentifier = user.user_metadata?.display_name || user.email || 'Calon penghuni'
+    // 3. Susun data notifikasi pengajuan
+    const userIdentifier =
+      user.user_metadata?.display_name || user.email || 'Calon penghuni'
     const noteText = note?.trim() ? `Catatan pemohon: "${note.trim()}"` : ''
-    const description = `User ${userIdentifier} mengajukan sewa untuk kamar ${room.name ?? 'kamar'}. ${noteText}`.trim()
+
+    const title = targetRoomName
+      ? `Pengajuan Sewa: ${targetRoomName} - ${property.name}`
+      : `Pengajuan Sewa Kamar: ${property.name} (Kamar Bebas)`
+
+    const description = targetRoomName
+      ? `User ${userIdentifier} mengajukan sewa untuk kamar ${targetRoomName}. ${noteText}`.trim()
+      : `User ${userIdentifier} mengajukan sewa untuk properti ${property.name} (skip pilih kamar / penempatan ditentukan pemilik). ${noteText}`.trim()
 
     const { error: insertError } = await supabase.from('notifications').insert({
       to_user_id: property.owner_id,
       from_user_id: user.id,
       property_id: property.id,
-      room_id: room.id,
+      room_id: targetRoomId,
       type: 'room_application',
-      title: `Pengajuan Sewa: ${room.name ?? 'Kamar'}`,
+      title,
       description,
       status: 'pending',
       read: false,
@@ -117,24 +156,21 @@ export async function POST(request: Request) {
 
     if (insertError) {
       console.error('Error inserting room_application notification:', insertError)
-      if (insertError.message.includes('notifications')) {
-        return NextResponse.json(
-          {
-            error:
-              'Tabel notifications belum siap di database. Pastikan migrasi SQL di Supabase SQL Editor telah dijalankan.',
-          },
-          { status: 500 }
-        )
-      }
       return NextResponse.json(
-        { error: `Gagal mengirim pengajuan: ${insertError.message}` },
+        {
+          error:
+            'Gagal menyimpan notifikasi pengajuan ke database: ' +
+            insertError.message,
+        },
         { status: 500 }
       )
     }
 
     return NextResponse.json({
       ok: true,
-      message: `Pengajuan sewa untuk ${room.name ?? 'kamar'} berhasil dikirim ke pemilik properti!`,
+      message: targetRoomName
+        ? `Pengajuan sewa untuk ${targetRoomName} berhasil dikirim ke pemilik kos!`
+        : `Pengajuan sewa (kamar ditentukan pengelola) berhasil dikirim ke pemilik kos!`,
     })
   } catch (err: unknown) {
     console.error('Unexpected error in /api/rooms/apply:', err)

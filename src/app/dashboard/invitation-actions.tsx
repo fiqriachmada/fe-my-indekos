@@ -9,6 +9,7 @@ export type Invitation = {
   title: string
   description: string | null
   property_id: string | null
+  room_id?: string | null
   status: string | null
   type?: string | null
   created_at: string
@@ -40,6 +41,10 @@ export function InvitationActions({ invitation }: { invitation: Invitation }) {
     setLoading(true)
     setError(null)
     try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
       // 1. Coba panggil RPC respond_to_room_application
       const { error: rpcError } = await supabase.rpc('respond_to_room_application', {
         p_notification_id: invitation.id,
@@ -47,24 +52,49 @@ export function InvitationActions({ invitation }: { invitation: Invitation }) {
       })
 
       if (rpcError) {
-        console.warn('RPC respond_to_room_application error, trying fallback:', rpcError)
-        // 2. Fallback jika RPC belum ada: coba respond_to_invitation atau update tabel notifications langsung
-        const { error: rpcError2 } = await supabase.rpc('respond_to_invitation', {
-          p_notification_id: invitation.id,
-          p_action: action,
-        })
+        console.warn('RPC respond_to_room_application error, running fallback:', rpcError)
+        // 2. Fallback jika RPC error: update tabel notifications langsung
+        const { error: updateError } = await supabase
+          .from('notifications')
+          .update({
+            status: action,
+            read: true,
+            responded_at: new Date().toISOString(),
+          })
+          .eq('id', invitation.id)
 
-        if (rpcError2) {
-          const { error: updateError } = await supabase
-            .from('notifications')
-            .update({
-              status: action,
-              read: true,
-              responded_at: new Date().toISOString(),
-            })
-            .eq('id', invitation.id)
+        if (updateError) throw updateError
+      }
 
-          if (updateError) throw updateError
+      // 3. Jaminan sinkronisasi room_members & rooms pada level client
+      if (user && invitation.room_id) {
+        if (action === 'approved') {
+          // Cari role occupant jika ada
+          const { data: roleData } = await supabase
+            .from('roles')
+            .select('id')
+            .eq('name', 'occupant')
+            .maybeSingle()
+
+          await supabase.from('room_members').upsert(
+            {
+              room_id: invitation.room_id,
+              user_id: user.id,
+              role_id: roleData?.id ?? null,
+            },
+            { onConflict: 'room_id,user_id' }
+          )
+        } else if (action === 'rejected') {
+          await supabase
+            .from('rooms')
+            .update({ occupant_member_id: null })
+            .eq('id', invitation.room_id)
+
+          await supabase
+            .from('room_members')
+            .delete()
+            .eq('room_id', invitation.room_id)
+            .eq('user_id', user.id)
         }
       }
 
