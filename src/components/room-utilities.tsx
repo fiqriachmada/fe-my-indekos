@@ -63,8 +63,31 @@ export function RoomUtilities({ roomId }: { roomId: string }) {
   }, [roomId])
 
   useEffect(() => {
-    void load()
-  }, [load])
+    let ignore = false
+    const fetchData = async () => {
+      try {
+        const res = await fetch(`/api/rooms/${roomId}/utilities`, { cache: 'no-store' })
+        const json = await res.json()
+        if (!ignore) {
+          if (!res.ok) throw new Error(json.error || 'Gagal memuat utilitas.')
+          setData(json)
+          setError(null)
+        }
+      } catch (e) {
+        if (!ignore) {
+          setError(e instanceof Error ? e.message : 'Gagal memuat utilitas.')
+        }
+      } finally {
+        if (!ignore) {
+          setLoading(false)
+        }
+      }
+    }
+    fetchData()
+    return () => {
+      ignore = true
+    }
+  }, [roomId])
 
   function openForm(type: 'pln' | 'pdam') {
     setForm({ amount: '', paidAt: todayInput(), tokenCode: '', kwh: '', meterReading: '', periodLabel: '', note: '' })
