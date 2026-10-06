@@ -16,6 +16,7 @@ import {
   X,
   AlertCircle,
   Sparkles,
+  HelpCircle,
 } from 'lucide-react'
 
 type RoomItem = {
@@ -64,14 +65,15 @@ export default function PropertySearchClient({
   // Application modal state
   const [modalOpen, setModalOpen] = useState(false)
   const [selectedProperty, setSelectedProperty] = useState<PropertyItem | null>(null)
-  const [selectedRoom, setSelectedRoom] = useState<RoomItem | null>(null)
+  const [selectionMode, setSelectionMode] = useState<'pick' | 'skip'>('skip')
+  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null)
   const [applicationNote, setApplicationNote] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null)
 
-  // Track rooms applied in this session
-  const [appliedRoomIds, setAppliedRoomIds] = useState<Set<string>>(new Set())
+  // Track applications made in this session
+  const [appliedKeys, setAppliedKeys] = useState<Set<string>>(new Set())
 
   const filteredProperties = useMemo(() => {
     return initialProperties.filter((item) => {
@@ -107,24 +109,45 @@ export default function PropertySearchClient({
     setExpandedPropertyId((prev) => (prev === propId ? null : propId))
   }
 
-  function handleOpenApplyModal(property: PropertyItem, room: RoomItem) {
+  function handleOpenApplyModal(property: PropertyItem, initialRoom: RoomItem | null = null) {
     if (!currentUser) {
       router.push('/login?redirect=/properties')
       return
     }
+
     setSelectedProperty(property)
-    setSelectedRoom(room)
     setApplicationNote('')
     setSubmitError(null)
+    setSubmitSuccess(null)
+
+    if (initialRoom) {
+      setSelectionMode('pick')
+      setSelectedRoomId(initialRoom.id)
+    } else {
+      // Cek apakah ada kamar tersedia
+      const availableRooms = (property.rooms ?? []).filter(
+        (r) => !Boolean(r.occupant_member_id) && (r.room_members?.length ?? 0) === 0
+      )
+      if (availableRooms.length > 0) {
+        setSelectionMode('pick')
+        setSelectedRoomId(availableRooms[0].id)
+      } else {
+        setSelectionMode('skip')
+        setSelectedRoomId(null)
+      }
+    }
+
     setModalOpen(true)
   }
 
   async function handleSubmitApplication(e: React.FormEvent) {
     e.preventDefault()
-    if (!selectedProperty || !selectedRoom) return
+    if (!selectedProperty) return
 
     setIsSubmitting(true)
     setSubmitError(null)
+
+    const chosenRoomId = selectionMode === 'pick' ? selectedRoomId : null
 
     try {
       const res = await fetch('/api/rooms/apply', {
@@ -134,7 +157,7 @@ export default function PropertySearchClient({
         },
         body: JSON.stringify({
           propertyId: selectedProperty.id,
-          roomId: selectedRoom.id,
+          roomId: chosenRoomId,
           note: applicationNote,
         }),
       })
@@ -145,21 +168,19 @@ export default function PropertySearchClient({
         throw new Error(data.error || 'Gagal mengirim pengajuan sewa.')
       }
 
-      // Berhasil
-      setAppliedRoomIds((prev) => new Set([...prev, selectedRoom.id]))
-      setSubmitSuccess(
-        data.message ||
-          `Pengajuan untuk ${selectedRoom.name ?? 'kamar'} berhasil dikirim ke pemilik!`
-      )
-      setModalOpen(false)
+      // Tandai pengajuan berhasil
+      const key = chosenRoomId ? `${selectedProperty.id}_${chosenRoomId}` : selectedProperty.id
+      setAppliedKeys((prev) => new Set(prev).add(key))
+      setSubmitSuccess(data.message || 'Pengajuan sewa berhasil dikirim!')
 
-      // Hilangkan pesan sukses setelah 6 detik
       setTimeout(() => {
+        setModalOpen(false)
         setSubmitSuccess(null)
-      }, 6000)
+        router.refresh()
+      }, 1800)
     } catch (err: unknown) {
       setSubmitError(
-        err instanceof Error ? err.message : 'Terjadi kesalahan tidak terduga.'
+        err instanceof Error ? err.message : 'Terjadi kesalahan saat mengajukan.'
       )
     } finally {
       setIsSubmitting(false)
@@ -168,34 +189,8 @@ export default function PropertySearchClient({
 
   return (
     <div className="space-y-6">
-      {/* Toast Notifikasi Berhasil */}
-      {submitSuccess && (
-        <div className="fixed top-5 right-5 z-50 flex max-w-md items-start gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-50 p-4 text-emerald-900 shadow-xl backdrop-blur-md dark:border-emerald-500/20 dark:bg-emerald-950/80 dark:text-emerald-100 animate-in fade-in slide-in-from-top-4 duration-300">
-          <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
-          <div className="flex-1 text-sm">
-            <p className="font-semibold">Pengajuan Terkirim!</p>
-            <p className="mt-0.5 text-xs opacity-90">{submitSuccess}</p>
-            <div className="mt-2 flex gap-3">
-              <Link
-                href="/dashboard"
-                className="text-xs font-bold text-emerald-700 underline hover:text-emerald-800 dark:text-emerald-300"
-              >
-                Cek Status di Dashboard →
-              </Link>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => setSubmitSuccess(null)}
-            className="text-emerald-600 hover:text-emerald-900 dark:text-emerald-400"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      )}
-
       {/* Search and Filters Bar */}
-      <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-4 shadow-sm transition-colors md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-4 shadow-xs transition-colors md:flex-row md:items-center md:justify-between">
         <div className="relative flex-1">
           <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
@@ -214,7 +209,7 @@ export default function PropertySearchClient({
               onClick={() => setTypeFilter('kosan')}
               className={`rounded-lg px-3 py-1.5 transition ${
                 typeFilter === 'kosan'
-                  ? 'bg-indigo-600 text-white'
+                  ? 'bg-indigo-600 text-white shadow-xs'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -225,7 +220,7 @@ export default function PropertySearchClient({
               onClick={() => setTypeFilter('all')}
               className={`rounded-lg px-3 py-1.5 transition ${
                 typeFilter === 'all'
-                  ? 'bg-indigo-600 text-white'
+                  ? 'bg-indigo-600 text-white shadow-xs'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -252,7 +247,7 @@ export default function PropertySearchClient({
           <span className="font-semibold text-foreground">
             {filteredProperties.length}
           </span>{' '}
-          properti
+          properti kos
         </p>
       </div>
 
@@ -281,11 +276,12 @@ export default function PropertySearchClient({
             const isAvailable = availableRooms > 0
             const isExpanded = expandedPropertyId === property.id
             const isOwner = currentUser?.id === property.owner_id
+            const isAppliedGeneral = appliedKeys.has(property.id)
 
             return (
               <div
                 key={property.id}
-                className="group flex flex-col justify-between overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition hover:shadow-md"
+                className="group flex flex-col justify-between overflow-hidden rounded-2xl border border-border bg-card shadow-xs transition hover:shadow-md"
               >
                 <div className="p-5">
                   <div className="flex items-start justify-between gap-2">
@@ -305,13 +301,11 @@ export default function PropertySearchClient({
                         </span>
                       )
                     ) : (
-                      <span className="text-xs text-muted-foreground">
-                        Belum ada kamar
-                      </span>
+                      <span className="text-xs text-muted-foreground">Belum ada kamar</span>
                     )}
                   </div>
 
-                  <h3 className="mt-3 text-lg font-bold group-hover:text-indigo-600">
+                  <h3 className="mt-3 text-lg font-bold group-hover:text-indigo-600 transition-colors">
                     {property.name}
                   </h3>
 
@@ -345,8 +339,8 @@ export default function PropertySearchClient({
                       >
                         <span>
                           {isExpanded
-                            ? 'Sembunyikan Daftar Kamar'
-                            : `Lihat Unit Kamar (${totalRooms})`}
+                            ? 'Sembunyikan Unit Kamar'
+                            : `Lihat Pilihan Kamar (${totalRooms})`}
                         </span>
                         <ChevronDown
                           className={`h-4 w-4 transition-transform ${
@@ -361,7 +355,9 @@ export default function PropertySearchClient({
                             const roomOccupied =
                               Boolean(room.occupant_member_id) ||
                               (room.room_members?.length ?? 0) > 0
-                            const isApplied = appliedRoomIds.has(room.id)
+                            const isApplied = appliedKeys.has(
+                              `${property.id}_${room.id}`
+                            )
 
                             return (
                               <div
@@ -390,7 +386,7 @@ export default function PropertySearchClient({
                                   ) : isApplied ? (
                                     <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-950/60 dark:text-amber-300">
                                       <CheckCircle2 className="h-3 w-3" />
-                                      Menunggu Pemilik
+                                      Terkirim
                                     </span>
                                   ) : isOwner ? (
                                     <span className="inline-block rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-medium text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300">
@@ -404,8 +400,7 @@ export default function PropertySearchClient({
                                       }
                                       className="inline-flex items-center gap-1 rounded-lg bg-indigo-600 px-2.5 py-1 text-[11px] font-semibold text-white shadow-xs transition hover:bg-indigo-700 active:scale-95"
                                     >
-                                      <Send className="h-3 w-3" />
-                                      Ajukan Sewa
+                                      Pilih Kamar
                                     </button>
                                   )}
                                 </div>
@@ -418,13 +413,37 @@ export default function PropertySearchClient({
                   )}
                 </div>
 
+                {/* Footer Kartu Properti */}
                 <div className="border-t border-border bg-muted/30 px-5 py-3">
-                  <Link
-                    href={`/dashboard`}
-                    className="inline-flex w-full items-center justify-center rounded-xl bg-background px-4 py-2 text-xs font-semibold text-foreground shadow-xs transition hover:bg-muted"
-                  >
-                    Buka di Dashboard
-                  </Link>
+                  {isOwner ? (
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[11px] font-medium text-indigo-600 dark:text-indigo-400">
+                        Properti Milik Anda
+                      </span>
+                      <Link
+                        href="/dashboard"
+                        className="rounded-xl border border-border bg-background px-3 py-1.5 text-xs font-semibold hover:bg-muted transition-colors"
+                      >
+                        Kelola di Dashboard
+                      </Link>
+                    </div>
+                  ) : isAppliedGeneral ? (
+                    <div className="flex items-center justify-center gap-1.5 rounded-xl bg-amber-50 py-2.5 text-xs font-semibold text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
+                      <CheckCircle2 className="h-4 w-4" />
+                      Pengajuan Sedang Diproses Pemilik
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenApplyModal(property, null)}
+                        className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-semibold text-white shadow-xs transition hover:bg-indigo-700 active:scale-98"
+                      >
+                        <Send className="h-3.5 w-3.5" />
+                        Ajukan Sewa Kamar
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             )
@@ -433,9 +452,9 @@ export default function PropertySearchClient({
       )}
 
       {/* Modal Pengajuan Sewa Kamar */}
-      {modalOpen && selectedProperty && selectedRoom && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="relative w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-2xl animate-in zoom-in-95 duration-200">
+      {modalOpen && selectedProperty && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="relative w-full max-w-lg rounded-2xl border border-border bg-card p-6 shadow-2xl animate-in zoom-in-95 duration-200">
             <button
               type="button"
               onClick={() => setModalOpen(false)}
@@ -445,94 +464,225 @@ export default function PropertySearchClient({
             </button>
 
             <div className="flex items-center gap-2">
-              <span className="flex size-8 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400">
+              <span className="flex size-9 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400">
                 <Send className="h-4 w-4" />
               </span>
               <div>
                 <h3 className="text-lg font-bold">Ajukan Sewa Kamar</h3>
                 <p className="text-xs text-muted-foreground">
-                  Kirim permohonan sewa ke pemilik properti
+                  Kirim permohonan sewa ke pemilik {selectedProperty.name}
                 </p>
               </div>
             </div>
 
-            <div className="mt-4 rounded-xl border border-border/80 bg-muted/30 p-3 text-xs">
-              <p className="font-semibold text-foreground">
+            <div className="mt-4 rounded-xl border border-border/80 bg-muted/40 p-3 text-xs">
+              <p className="font-semibold text-foreground text-sm">
                 {selectedProperty.name}
               </p>
-              <p className="text-muted-foreground">
-                Kamar:{' '}
-                <span className="font-medium text-foreground">
-                  {selectedRoom.name ?? 'Kamar'}
-                </span>
-                {selectedRoom.area ? ` (${selectedRoom.area} m²)` : ''}
-              </p>
               {selectedProperty.location && (
-                <p className="mt-1 text-[11px] text-muted-foreground">
-                  Lokasi: {selectedProperty.location}
+                <p className="mt-0.5 text-xs text-muted-foreground flex items-center gap-1">
+                  <MapPin className="h-3 w-3 text-indigo-500 shrink-0" />
+                  {selectedProperty.location}
                 </p>
               )}
             </div>
 
-            {submitError && (
-              <div className="mt-4 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
-                <AlertCircle className="h-4 w-4 shrink-0 text-red-600 mt-0.5" />
-                <p>{submitError}</p>
+            {submitSuccess ? (
+              <div className="my-6 flex flex-col items-center justify-center rounded-xl bg-emerald-50 p-6 text-center text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200 animate-in fade-in">
+                <CheckCircle2 className="h-10 w-10 text-emerald-600 dark:text-emerald-400 mb-2" />
+                <h4 className="font-bold text-base">Berhasil Mengajukan!</h4>
+                <p className="mt-1 text-xs">{submitSuccess}</p>
+                <p className="mt-3 text-[11px] text-muted-foreground">
+                  Menutup jendela secara otomatis...
+                </p>
               </div>
+            ) : (
+              <form onSubmit={handleSubmitApplication} className="mt-4 space-y-4">
+                {submitError && (
+                  <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
+                    <AlertCircle className="h-4 w-4 shrink-0 text-red-600 mt-0.5" />
+                    <p>{submitError}</p>
+                  </div>
+                )}
+
+                {/* Tab Pilihan: Mau Pilih Kamar atau Skip Pilih Kamar */}
+                <div>
+                  <label className="block text-xs font-semibold text-foreground mb-2">
+                    Metode Pemilihan Kamar
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectionMode('pick')
+                        const available = (selectedProperty.rooms ?? []).filter(
+                          (r) =>
+                            !Boolean(r.occupant_member_id) &&
+                            (r.room_members?.length ?? 0) === 0
+                        )
+                        if (available.length > 0 && !selectedRoomId) {
+                          setSelectedRoomId(available[0].id)
+                        }
+                      }}
+                      className={`flex flex-col items-start rounded-xl border p-3 text-left transition ${
+                        selectionMode === 'pick'
+                          ? 'border-indigo-600 bg-indigo-50/70 text-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-200 font-semibold'
+                          : 'border-border text-muted-foreground hover:bg-muted'
+                      }`}
+                    >
+                      <span className="text-xs flex items-center gap-1.5">
+                        <Bed className="h-3.5 w-3.5 text-indigo-600" />
+                        Pilih Kamar Tertentu
+                      </span>
+                      <span className="text-[10px] text-muted-foreground mt-0.5 font-normal">
+                        Pilih unit kamar yang masih kosong
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectionMode('skip')
+                        setSelectedRoomId(null)
+                      }}
+                      className={`flex flex-col items-start rounded-xl border p-3 text-left transition ${
+                        selectionMode === 'skip'
+                          ? 'border-indigo-600 bg-indigo-50/70 text-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-200 font-semibold'
+                          : 'border-border text-muted-foreground hover:bg-muted'
+                      }`}
+                    >
+                      <span className="text-xs flex items-center gap-1.5">
+                        <Sparkles className="h-3.5 w-3.5 text-indigo-600" />
+                        Skip Pilih Kamar
+                      </span>
+                      <span className="text-[10px] text-muted-foreground mt-0.5 font-normal">
+                        Bebas / ditentukan oleh pemilik kos
+                      </span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Daftar Pilihan Kamar Spesifik jika mode 'pick' */}
+                {selectionMode === 'pick' && (
+                  <div className="space-y-2 rounded-xl border border-border bg-background p-3 animate-in fade-in duration-150">
+                    <span className="block text-[11px] font-semibold text-foreground">
+                      Pilih Unit Kamar yang Tersedia:
+                    </span>
+                    {(() => {
+                      const availableRooms = (selectedProperty.rooms ?? []).filter(
+                        (r) =>
+                          !Boolean(r.occupant_member_id) &&
+                          (r.room_members?.length ?? 0) === 0
+                      )
+
+                      if (availableRooms.length === 0) {
+                        return (
+                          <div className="rounded-lg bg-amber-50 p-2.5 text-xs text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+                            Saat ini belum ada kamar kosong spesifik. Anda dapat memilih opsi{' '}
+                            <strong>"Skip Pilih Kamar"</strong> untuk mendaftar antrean/kamar acak ke pemilik.
+                          </div>
+                        )
+                      }
+
+                      return (
+                        <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto pr-1">
+                          {availableRooms.map((room) => {
+                            const isSelected = selectedRoomId === room.id
+                            return (
+                              <button
+                                key={room.id}
+                                type="button"
+                                onClick={() => setSelectedRoomId(room.id)}
+                                className={`flex flex-col items-start rounded-lg border p-2 text-left text-xs transition ${
+                                  isSelected
+                                    ? 'border-indigo-600 bg-indigo-600 text-white shadow-xs'
+                                    : 'border-border hover:bg-muted text-foreground'
+                                }`}
+                              >
+                                <span className="font-bold">{room.name ?? 'Kamar'}</span>
+                                <span
+                                  className={`text-[10px] ${
+                                    isSelected ? 'text-indigo-100' : 'text-muted-foreground'
+                                  }`}
+                                >
+                                  {room.area ? `${room.area} m²` : 'Standard'}
+                                  {room.bathroom_mode === 'inside' ? ' · KM Dalam' : ''}
+                                </span>
+                              </button>
+                            )
+                          })}
+                        </div>
+                      )
+                    })()}
+                  </div>
+                )}
+
+                {/* Keterangan jika mode 'skip' */}
+                {selectionMode === 'skip' && (
+                  <div className="rounded-xl border border-dashed border-indigo-200 bg-indigo-50/50 p-3 text-xs text-indigo-900 dark:border-indigo-800 dark:bg-indigo-950/30 dark:text-indigo-200 animate-in fade-in duration-150">
+                    <p className="font-semibold flex items-center gap-1">
+                      <Sparkles className="h-3.5 w-3.5 text-indigo-600" />
+                      Penempatan Kamar Bebas:
+                    </p>
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      Anda tidak mengunci kamar tertentu. Pemilik kos akan menghubungi dan menentukan
+                      penempatan kamar terbaik yang cocok untuk Anda saat menyetujui pengajuan sewa ini.
+                    </p>
+                  </div>
+                )}
+
+                {/* Input Catatan Tambahan */}
+                <div>
+                  <label
+                    htmlFor="note"
+                    className="block text-xs font-semibold text-foreground"
+                  >
+                    Pesan atau Catatan Tambahan (Opsional)
+                  </label>
+                  <textarea
+                    id="note"
+                    rows={2}
+                    value={applicationNote}
+                    onChange={(e) => setApplicationNote(e.target.value)}
+                    placeholder="Contoh: Rencana masuk tanggal 15 bulan ini, mohon info detail pembayarannya..."
+                    className="mt-1 w-full rounded-xl border border-input bg-background p-2.5 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                  />
+                </div>
+
+                <div className="rounded-xl bg-muted/40 p-2.5 text-[11px] text-muted-foreground">
+                  Pemilik properti akan menerima pengajuan ini secara realtime. Anda dapat memantau status
+                  persetujuannya di dashboard dan menu notifikasi.
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={() => setModalOpen(false)}
+                    className="rounded-xl border border-border px-4 py-2 text-xs font-semibold text-muted-foreground transition hover:bg-muted"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting || (selectionMode === 'pick' && !selectedRoomId)}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white shadow-xs transition hover:bg-indigo-700 disabled:opacity-50"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        Mengirim...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="h-3.5 w-3.5" />
+                        Kirim Pengajuan Sewa
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
             )}
-
-            <form onSubmit={handleSubmitApplication} className="mt-4 space-y-4">
-              <div>
-                <label
-                  htmlFor="note"
-                  className="block text-xs font-semibold text-foreground"
-                >
-                  Pesan atau Catatan Tambahan (Opsional)
-                </label>
-                <textarea
-                  id="note"
-                  rows={3}
-                  value={applicationNote}
-                  onChange={(e) => setApplicationNote(e.target.value)}
-                  placeholder="Contoh: Rencana mulai masuk tanggal 15 bulan ini, mohon infokan jika ada syarat khusus..."
-                  className="mt-1 w-full rounded-xl border border-input bg-background p-3 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
-                />
-              </div>
-
-              <div className="rounded-xl bg-indigo-50/70 p-3 text-[11px] text-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-200">
-                Pemilik properti akan menerima notifikasi Anda dan dapat
-                menyetujui atau menolak. Status pengajuan dapat Anda pantau
-                langsung di dashboard dan ikon lonceng realtime.
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  disabled={isSubmitting}
-                  onClick={() => setModalOpen(false)}
-                  className="rounded-xl border border-border px-4 py-2 text-xs font-semibold text-muted-foreground transition hover:bg-muted"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white shadow-xs transition hover:bg-indigo-700 disabled:opacity-50"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      Mengirim...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="h-3.5 w-3.5" />
-                      Kirim Pengajuan Sewa
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
           </div>
         </div>
       )}

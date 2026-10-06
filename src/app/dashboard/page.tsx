@@ -70,7 +70,7 @@ export default async function DashboardPage() {
       .from('rooms')
       .select('id, name, room_number, property:properties(id, name)')
       .in('occupant_member_id', userMemberIds)
-    directAssignedRooms = (directRooms ?? []) as RoomRow[]
+    directAssignedRooms = (directRooms ?? []) as unknown as RoomRow[]
   }
 
   // Gabungkan kamar dari room_members dan dari occupant_member_id (deduplikasi berdasarkan id)
