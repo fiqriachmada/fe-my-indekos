@@ -32,7 +32,7 @@ export default async function DashboardPage() {
     // Notifications / room applications for this user (safely handled)
     supabase
       .from('notifications')
-      .select('id, title, description, property_id, status, created_at, property:properties(name)')
+      .select('id, title, description, property_id, status, type, created_at, property:properties(name)')
       .eq('to_user_id', user.id)
       .eq('status', 'pending')
       .order('created_at', { ascending: false })

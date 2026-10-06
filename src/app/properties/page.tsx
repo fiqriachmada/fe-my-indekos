@@ -9,6 +9,10 @@ export const metadata = {
 export default async function PropertiesPage() {
   const supabase = await createClient()
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
   // Ambil data properti dan relasi kamar
   const { data: properties, error } = await supabase
     .from("properties")
@@ -19,12 +23,16 @@ export default async function PropertiesPage() {
       property_type,
       building_area,
       land_area,
+      owner_id,
       created_at,
       is_active,
       rooms (
         id,
         name,
         is_active,
+        area,
+        bathroom_mode,
+        occupant_member_id,
         room_members (
           user_id
         )
@@ -53,7 +61,10 @@ export default async function PropertiesPage() {
           </div>
         )}
 
-        <PropertySearchClient initialProperties={properties ?? []} />
+        <PropertySearchClient
+          initialProperties={properties ?? []}
+          currentUser={user ? { id: user.id, email: user.email ?? null } : null}
+        />
       </div>
     </main>
   )
