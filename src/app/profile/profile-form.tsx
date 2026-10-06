@@ -51,8 +51,9 @@ export default function ProfileForm({
   const usernameLockedUntil = usernameLastChanged
     ? new Date(new Date(usernameLastChanged).getTime() + 24 * 60 * 60 * 1000)
     : null
+  const [currentTime] = useState(() => Date.now())
   const usernameChangeAllowed =
-    !usernameLockedUntil || usernameLockedUntil.getTime() <= Date.now()
+    !usernameLockedUntil || usernameLockedUntil.getTime() <= currentTime
   const usernameHint = usernameChangeAllowed
     ? 'Username bersifat unik dan hanya bisa diganti sekali setiap 24 jam.'
     : `Username terkunci. Bisa diganti lagi pada ${usernameLockedUntil?.toLocaleString('id-ID', {
