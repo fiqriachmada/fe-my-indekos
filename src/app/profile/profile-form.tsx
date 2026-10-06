@@ -34,8 +34,9 @@ export default function ProfileForm({
   const [profileStatus, setProfileStatus] = useState<string | null>(null)
   const [profileError, setProfileError] = useState<string | null>(null)
 
-  // Username state
-  const [username, setUsername] = useState(initialUsername)
+  // Username state (strip leading @ so the field contains only the username)
+  const initialCleanUsername = (initialUsername || '').replace(/^@/, '')
+  const [username, setUsername] = useState(initialCleanUsername)
   const [usernameLastChanged, setUsernameLastChanged] = useState<string | null>(
     initialUsernameLastChanged
   )
@@ -115,23 +116,23 @@ export default function ProfileForm({
     setUsernameStatus(null)
     setUsernameError(null)
 
-    const cleaned = username.trim()
+    const cleaned = username.trim().replace(/^@/, '')
     if (!cleaned) {
       setUsernameError('Silakan masukkan username terlebih dahulu.')
       return
     }
 
-    const normalized = cleaned.toLowerCase().replace(/^@?/, '@')
-
-    if (normalized === initialUsername) {
+    if (cleaned.toLowerCase() === initialCleanUsername.toLowerCase()) {
       setUsernameError('Username ini sudah menjadi username Anda saat ini.')
       return
     }
 
-    if (normalized.length < 4) {
-      setUsernameError('Username minimal 3 karakter (setelah @).')
+    if (cleaned.length < 3) {
+      setUsernameError('Username minimal 3 karakter.')
       return
     }
+
+    const normalized = `@${cleaned.toLowerCase()}`
 
     setUsernameLoading(true)
     const supabase = createClient()
@@ -168,7 +169,7 @@ export default function ProfileForm({
 
     const res = data as { username: string; last_changed_at: string } | null
     if (res?.username) {
-      setUsername(res.username)
+      setUsername(res.username.replace(/^@/, ''))
     }
     if (res?.last_changed_at) {
       setUsernameLastChanged(res.last_changed_at)
@@ -282,15 +283,20 @@ export default function ProfileForm({
           Username
         </label>
         <div className="mt-2 flex gap-2">
-          <input
-            id="username"
-            type="text"
-            value={username}
-            disabled={!usernameChangeAllowed || usernameLoading}
-            onChange={(e) => setUsername(e.target.value)}
-            placeholder="@username"
-            className="min-w-0 flex-1 rounded-xl border border-input bg-background px-3 py-2.5 text-foreground outline-none transition-colors focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 disabled:cursor-not-allowed disabled:bg-muted/50 disabled:text-muted-foreground"
-          />
+          <div className="flex flex-1 overflow-hidden rounded-xl border border-input bg-background transition-colors focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-200">
+            <span className="flex select-none items-center border-r border-input bg-muted/60 px-3.5 text-sm font-semibold text-muted-foreground">
+              @
+            </span>
+            <input
+              id="username"
+              type="text"
+              value={username}
+              disabled={!usernameChangeAllowed || usernameLoading}
+              onChange={(e) => setUsername(e.target.value.replace(/^@/, ''))}
+              placeholder="username"
+              className="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-foreground outline-none disabled:cursor-not-allowed disabled:bg-muted/30 disabled:text-muted-foreground"
+            />
+          </div>
           <button
             type="button"
             disabled={!usernameChangeAllowed || usernameLoading || !username.trim()}

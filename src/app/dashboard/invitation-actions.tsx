@@ -24,24 +24,31 @@ export function InvitationActions({ invitation }: { invitation: Invitation }) {
     setLoading(true)
     setError(null)
     try {
-      // Coba panggil RPC respond_to_invitation terlebih dahulu
-      const { error: rpcError } = await supabase.rpc('respond_to_invitation', {
+      // Coba panggil RPC respond_to_room_application
+      const { error: rpcError } = await supabase.rpc('respond_to_room_application', {
         p_notification_id: invitation.id,
         p_action: action,
       })
 
       if (rpcError) {
-        // Fallback update langsung jika RPC belum tersedia
-        const { error: updateError } = await supabase
-          .from('notifications')
-          .update({
-            status: action,
-            read: true,
-            responded_at: new Date().toISOString(),
-          })
-          .eq('id', invitation.id)
+        // Fallback coba respond_to_invitation atau update tabel notifications langsung
+        const { error: rpcError2 } = await supabase.rpc('respond_to_invitation', {
+          p_notification_id: invitation.id,
+          p_action: action,
+        })
 
-        if (updateError) throw updateError
+        if (rpcError2) {
+          const { error: updateError } = await supabase
+            .from('notifications')
+            .update({
+              status: action,
+              read: true,
+              responded_at: new Date().toISOString(),
+            })
+            .eq('id', invitation.id)
+
+          if (updateError) throw updateError
+        }
       }
 
       router.refresh()
