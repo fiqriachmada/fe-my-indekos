@@ -2,227 +2,313 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
-type Ctx = { params: Promise<{ roomId: string }> }
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ roomId: string }> }
+) {
+  try {
+    const { roomId } = await params
+    const supabase = await createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
 
-const MANAGER_ROLES = ['owner', 'property-admin']
-const VIEW_ROLES = [...MANAGER_ROLES, 'guard']
-
-/**
- * Menentukan hak akses user terhadap utilitas sebuah kamar.
- * - manager  : owner properti / property-admin  -> boleh catat PLN & PDAM
- * - occupant : penghuni kamar                    -> boleh catat PLN saja
- * - guard    : hanya lihat
- */
-async function resolveAccess(userId: string, roomId: string) {
-  const admin = createAdminClient()
-
-  const { data: room } = await admin
-    .from('rooms')
-    .select('id, name, property_id, occupant_member_id, water_mode')
-    .eq('id', roomId)
-    .maybeSingle()
-  if (!room) return { admin, room: null, isManager: false, isOccupant: false, canView: false }
-
-  const [{ data: property }, { data: memberships }, { data: roomMember }] = await Promise.all([
-    admin.from('properties').select('id, owner_id').eq('id', room.property_id).maybeSingle(),
-    admin
-      .from('property_members')
-      .select('id, role:roles(name)')
-      .eq('property_id', room.property_id)
-      .eq('user_id', userId),
-    admin.from('room_members').select('user_id').eq('room_id', roomId).eq('user_id', userId).maybeSingle(),
-  ])
-
-  const roleNames = (memberships ?? []).map((m) => {
-    const r = Array.isArray(m.role) ? m.role[0] : m.role
-    return (r as { name?: string } | null)?.name ?? ''
-  })
-  const memberIds = (memberships ?? []).map((m) => m.id)
-
-  const isManager = property?.owner_id === userId || roleNames.some((r) => MANAGER_ROLES.includes(r))
-  const isGuard = roleNames.some((r) => r === 'guard')
-  const isOccupant =
-    Boolean(roomMember) || (room.occupant_member_id ? memberIds.includes(room.occupant_member_id) : false)
-
-  return {
-    admin,
-    room,
-    isManager,
-    isOccupant,
-    canView: isManager || isOccupant || isGuard || roleNames.some((r) => VIEW_ROLES.includes(r)),
-  }
-}
-
-export async function GET(_req: Request, { params }: Ctx) {
-  const { roomId } = await params
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Silakan login terlebih dahulu.' }, { status: 401 })
-
-  const { admin, room, isManager, isOccupant, canView } = await resolveAccess(user.id, roomId)
-  if (!room) return NextResponse.json({ error: 'Kamar tidak ditemukan.' }, { status: 404 })
-  if (!canView) return NextResponse.json({ error: 'Anda tidak memiliki akses ke utilitas kamar ini.' }, { status: 403 })
-
-  const { data: entries, error } = await admin
-    .from('utility_payments')
-    .select('id, utility_type, amount, paid_at, token_code, kwh, meter_reading, period_label, note, created_by, created_by_role, created_at')
-    .eq('room_id', roomId)
-    .order('paid_at', { ascending: false })
-    .limit(100)
-
-  if (error) {
-    const missing = error.code === '42P01' || /utility_payments/.test(error.message)
-    return NextResponse.json(
-      {
-        error: missing
-          ? 'Tabel utility_payments belum dibuat. Jalankan migrasi 20261006_create_utility_payments.sql di Supabase SQL Editor.'
-          : error.message,
-        migrationMissing: missing,
-      },
-      { status: missing ? 503 : 500 }
-    )
-  }
-
-  // Nama pencatat
-  const creatorIds = [...new Set((entries ?? []).map((e) => e.created_by).filter(Boolean))] as string[]
-  const names = new Map<string, string>()
-  if (creatorIds.length) {
-    const { data: profiles } = await admin
-      .from('profiles')
-      .select('id, display_name, first_name, last_name')
-      .in('id', creatorIds)
-    for (const p of profiles ?? []) {
-      names.set(p.id, p.display_name || [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Pengguna')
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-  }
 
-  const list = (entries ?? []).map((e) => ({
-    ...e,
-    created_by_name: e.created_by ? names.get(e.created_by) ?? 'Pengguna' : null,
-    can_delete: isManager || e.created_by === user.id,
-  }))
+    const admin = createAdminClient()
 
-  return NextResponse.json({
-    entries: list,
-    latest: {
-      pln: list.find((e) => e.utility_type === 'pln') ?? null,
-      pdam: list.find((e) => e.utility_type === 'pdam') ?? null,
-    },
-    permissions: {
-      canAddPln: isManager || isOccupant,
-      canAddPdam: isManager && room.water_mode !== 'none',
-      isManager,
-      isOccupant,
-    },
-    waterMode: room.water_mode ?? null,
-  })
-}
+    // 1. Ambil detail kamar dan propertinya
+    const { data: room, error: roomErr } = await admin
+      .from('rooms')
+      .select('id, name, property_id, occupant_member_id')
+      .eq('id', roomId)
+      .maybeSingle()
 
-export async function POST(request: Request, { params }: Ctx) {
-  const { roomId } = await params
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Silakan login terlebih dahulu.' }, { status: 401 })
+    if (roomErr || !room) {
+      return NextResponse.json({ error: 'Kamar tidak ditemukan' }, { status: 404 })
+    }
 
-  const { admin, room, isManager, isOccupant } = await resolveAccess(user.id, roomId)
-  if (!room) return NextResponse.json({ error: 'Kamar tidak ditemukan.' }, { status: 404 })
+    // 2. Ambil data utility_payments
+    const { data: payments, error: payErr } = await admin
+      .from('utility_payments')
+      .select('*')
+      .eq('room_id', roomId)
+      .order('paid_at', { ascending: false })
 
-  const body = await request.json().catch(() => ({}))
-  const utilityType = body.utilityType as 'pln' | 'pdam'
-  if (utilityType !== 'pln' && utilityType !== 'pdam') {
-    return NextResponse.json({ error: 'Jenis utilitas harus pln atau pdam.' }, { status: 400 })
-  }
+    if (payErr) {
+      return NextResponse.json({ error: payErr.message }, { status: 500 })
+    }
 
-  // Aturan akses: PDAM hanya owner/admin, PLN owner/admin atau penghuni.
-  if (utilityType === 'pdam' && !isManager) {
-    return NextResponse.json({ error: 'Pembayaran PDAM hanya dapat dicatat oleh pemilik properti.' }, { status: 403 })
-  }
-  if (utilityType === 'pln' && !isManager && !isOccupant) {
-    return NextResponse.json({ error: 'Hanya pemilik atau penghuni kamar yang dapat mencatat PLN.' }, { status: 403 })
-  }
-  if (utilityType === 'pdam' && room.water_mode === 'none') {
-    return NextResponse.json({ error: 'Kamar ini tidak memiliki layanan PDAM.' }, { status: 400 })
-  }
+    const list = payments ?? []
+    const lastPln = list.find((p) => p.utility_type === 'pln') ?? null
+    const lastPdam = list.find((p) => p.utility_type === 'pdam') ?? null
 
-  const amount = Number(body.amount)
-  if (!Number.isFinite(amount) || amount < 0) {
-    return NextResponse.json({ error: 'Nominal tidak valid.' }, { status: 400 })
-  }
-
-  const paidAt = body.paidAt ? new Date(body.paidAt) : new Date()
-  if (Number.isNaN(paidAt.getTime()) || paidAt.getTime() > Date.now() + 24 * 3600 * 1000) {
-    return NextResponse.json({ error: 'Tanggal pembayaran tidak valid.' }, { status: 400 })
-  }
-
-  const num = (v: unknown) => (v === '' || v === null || v === undefined ? null : Number.isFinite(Number(v)) ? Number(v) : null)
-  const str = (v: unknown, max = 200) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : null)
-
-  const { data, error } = await admin
-    .from('utility_payments')
-    .insert({
-      room_id: roomId,
-      property_id: room.property_id,
-      utility_type: utilityType,
-      amount,
-      paid_at: paidAt.toISOString(),
-      token_code: utilityType === 'pln' ? str(body.tokenCode, 64) : null,
-      kwh: utilityType === 'pln' ? num(body.kwh) : null,
-      meter_reading: utilityType === 'pdam' ? num(body.meterReading) : null,
-      period_label: str(body.periodLabel, 32),
-      note: str(body.note, 500),
-      created_by: user.id,
-      created_by_role: isManager ? 'owner' : 'occupant',
+    return NextResponse.json({
+      room,
+      payments: list,
+      last_pln: lastPln,
+      last_pdam: lastPdam,
     })
-    .select('id')
-    .single()
-
-  if (error) {
-    const missing = error.code === '42P01' || /utility_payments/.test(error.message)
-    return NextResponse.json(
-      {
-        error: missing
-          ? 'Tabel utility_payments belum dibuat. Jalankan migrasi 20261006_create_utility_payments.sql di Supabase SQL Editor.'
-          : error.message,
-      },
-      { status: missing ? 503 : 500 }
-    )
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Server error'
+    return NextResponse.json({ error: message }, { status: 500 })
   }
-
-  return NextResponse.json({ ok: true, id: data.id })
 }
 
-export async function DELETE(request: Request, { params }: Ctx) {
-  const { roomId } = await params
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Silakan login terlebih dahulu.' }, { status: 401 })
+export async function POST(
+  request: Request,
+  { params }: { params: Promise<{ roomId: string }> }
+) {
+  try {
+    const { roomId } = await params
+    const supabase = await createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
 
-  const entryId = new URL(request.url).searchParams.get('id')
-  if (!entryId) return NextResponse.json({ error: 'ID catatan wajib diisi.' }, { status: 400 })
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
-  const { admin, room, isManager } = await resolveAccess(user.id, roomId)
-  if (!room) return NextResponse.json({ error: 'Kamar tidak ditemukan.' }, { status: 404 })
+    const body = await request.json()
+    const {
+      utility_type,
+      amount,
+      paid_at,
+      token_code,
+      kwh,
+      meter_reading,
+      period_label,
+      note,
+    } = body
 
-  const { data: entry } = await admin
-    .from('utility_payments')
-    .select('id, created_by, utility_type')
-    .eq('id', entryId)
-    .eq('room_id', roomId)
-    .maybeSingle()
-  if (!entry) return NextResponse.json({ error: 'Catatan tidak ditemukan.' }, { status: 404 })
+    if (!utility_type || !['pln', 'pdam'].includes(utility_type)) {
+      return NextResponse.json(
+        { error: 'Tipe utilitas harus "pln" atau "pdam"' },
+        { status: 400 }
+      )
+    }
 
-  // Penghuni hanya boleh menghapus catatan PLN miliknya sendiri.
-  if (!isManager && !(entry.utility_type === 'pln' && entry.created_by === user.id)) {
-    return NextResponse.json({ error: 'Anda tidak berhak menghapus catatan ini.' }, { status: 403 })
+    const parsedAmount = Number(amount)
+    if (isNaN(parsedAmount) || parsedAmount < 0) {
+      return NextResponse.json({ error: 'Nominal amount tidak valid' }, { status: 400 })
+    }
+
+    const admin = createAdminClient()
+
+    // 1. Ambil detail kamar dan properti
+    const { data: room, error: roomErr } = await admin
+      .from('rooms')
+      .select('id, name, property_id, properties:property_id (id, name, owner_id)')
+      .eq('id', roomId)
+      .maybeSingle()
+
+    if (roomErr || !room) {
+      return NextResponse.json({ error: 'Kamar tidak ditemukan' }, { status: 404 })
+    }
+
+    const property = Array.isArray(room.properties) ? room.properties[0] : room.properties
+    const propertyId = room.property_id
+    const ownerId = property?.owner_id
+
+    const isOwner = ownerId === user.id
+    const role: 'owner' | 'occupant' = isOwner ? 'owner' : 'occupant'
+
+    // 2. Simpan catatan ke utility_payments
+    const insertPayload = {
+      room_id: roomId,
+      property_id: propertyId,
+      utility_type,
+      amount: parsedAmount,
+      paid_at: paid_at || new Date().toISOString(),
+      token_code: token_code ? String(token_code).trim() : null,
+      kwh: kwh !== undefined && kwh !== null && kwh !== '' ? Number(kwh) : null,
+      meter_reading:
+        meter_reading !== undefined && meter_reading !== null && meter_reading !== ''
+          ? Number(meter_reading)
+          : null,
+      period_label: period_label ? String(period_label).trim() : null,
+      note: note ? String(note).trim() : null,
+      created_by: user.id,
+      created_by_role: role,
+    }
+
+    const { data: newPayment, error: insertErr } = await admin
+      .from('utility_payments')
+      .insert(insertPayload)
+      .select()
+      .single()
+
+    if (insertErr) {
+      return NextResponse.json({ error: insertErr.message }, { status: 500 })
+    }
+
+    // 3. Jika diisi oleh penghuni (bukan owner), kirimkan notifikasi ke owner
+    if (!isOwner && ownerId) {
+      const typeLabel = utility_type.toUpperCase()
+      const formattedNominal = new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        maximumFractionDigits: 0,
+      }).format(parsedAmount)
+
+      await admin.from('notifications').insert({
+        to_user_id: ownerId,
+        from_user_id: user.id,
+        property_id: propertyId,
+        room_id: roomId,
+        title: `Pengisian Utilitas ${typeLabel} - ${room.name}`,
+        description: `Penghuni telah mencatat pengisian utilitas ${typeLabel} sebesar ${formattedNominal}${
+          token_code ? ` (Token: ${token_code})` : ''
+        }.`,
+        type: 'utility_payment',
+        status: 'completed',
+        read: false,
+      })
+    }
+
+    return NextResponse.json({ ok: true, payment: newPayment })
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Server error'
+    return NextResponse.json({ error: message }, { status: 500 })
   }
+}
 
-  const { error } = await admin.from('utility_payments').delete().eq('id', entryId)
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ ok: true })
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ roomId: string }> }
+) {
+  try {
+    const { roomId } = await params
+    const supabase = await createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const body = await request.json()
+    const { id, amount, paid_at, token_code, kwh, meter_reading, period_label, note } = body
+
+    if (!id) {
+      return NextResponse.json({ error: 'ID catatan wajib diisi' }, { status: 400 })
+    }
+
+    const admin = createAdminClient()
+
+    // Cek catatan lama
+    const { data: existing, error: getErr } = await admin
+      .from('utility_payments')
+      .select('id, created_by, property_id, properties:property_id(owner_id)')
+      .eq('id', id)
+      .eq('room_id', roomId)
+      .maybeSingle()
+
+    if (getErr || !existing) {
+      return NextResponse.json({ error: 'Catatan tidak ditemukan' }, { status: 404 })
+    }
+
+    const prop = Array.isArray(existing.properties) ? existing.properties[0] : existing.properties
+    const isOwner = prop?.owner_id === user.id
+    const isCreator = existing.created_by === user.id
+
+    if (!isOwner && !isCreator) {
+      return NextResponse.json(
+        { error: 'Anda tidak memiliki hak untuk mengedit catatan ini' },
+        { status: 403 }
+      )
+    }
+
+    const updatePayload: Record<string, unknown> = {}
+    if (amount !== undefined) updatePayload.amount = Number(amount)
+    if (paid_at !== undefined) updatePayload.paid_at = paid_at
+    if (token_code !== undefined) updatePayload.token_code = token_code || null
+    if (kwh !== undefined) updatePayload.kwh = kwh !== '' ? Number(kwh) : null
+    if (meter_reading !== undefined)
+      updatePayload.meter_reading = meter_reading !== '' ? Number(meter_reading) : null
+    if (period_label !== undefined) updatePayload.period_label = period_label || null
+    if (note !== undefined) updatePayload.note = note || null
+
+    const { data: updated, error: updateErr } = await admin
+      .from('utility_payments')
+      .update(updatePayload)
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (updateErr) {
+      return NextResponse.json({ error: updateErr.message }, { status: 500 })
+    }
+
+    return NextResponse.json({ ok: true, payment: updated })
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Server error'
+    return NextResponse.json({ error: message }, { status: 500 })
+  }
+}
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ roomId: string }> }
+) {
+  try {
+    const { roomId } = await params
+    const supabase = await createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const url = new URL(request.url)
+    const id = url.searchParams.get('id')
+
+    if (!id) {
+      return NextResponse.json({ error: 'ID catatan wajib disertakan' }, { status: 400 })
+    }
+
+    const admin = createAdminClient()
+
+    const { data: existing, error: getErr } = await admin
+      .from('utility_payments')
+      .select('id, created_by, property_id, properties:property_id(owner_id)')
+      .eq('id', id)
+      .eq('room_id', roomId)
+      .maybeSingle()
+
+    if (getErr || !existing) {
+      return NextResponse.json({ error: 'Catatan tidak ditemukan' }, { status: 404 })
+    }
+
+    const prop = Array.isArray(existing.properties) ? existing.properties[0] : existing.properties
+    const isOwner = prop?.owner_id === user.id
+    const isCreator = existing.created_by === user.id
+
+    if (!isOwner && !isCreator) {
+      return NextResponse.json(
+        { error: 'Anda tidak memiliki hak untuk menghapus catatan ini' },
+        { status: 403 }
+      )
+    }
+
+    const { error: delErr } = await admin
+      .from('utility_payments')
+      .delete()
+      .eq('id', id)
+
+    if (delErr) {
+      return NextResponse.json({ error: delErr.message }, { status: 500 })
+    }
+
+    return NextResponse.json({ ok: true })
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Server error'
+    return NextResponse.json({ error: message }, { status: 500 })
+  }
 }
