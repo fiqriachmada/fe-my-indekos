@@ -73,6 +73,17 @@ Aplikasi ini berbagi database Supabase yang sama dengan platform induk (Property
 
 ---
 
+### 7. Riwayat Utilitas Kamar (PLN & PDAM) — `/rooms/detail/[id]`
+- Tabel `utility_payments` (migrasi `db/migrations/20261006_create_utility_payments.sql`, **wajib dijalankan di Supabase SQL Editor**): `utility_type` (`pln`|`pdam`), `amount`, `paid_at`, `token_code`, `kwh` (PLN), `meter_reading` (PDAM), `period_label`, `note`, `created_by`, `created_by_role`.
+- API `/api/rooms/[roomId]/utilities` (GET/POST/DELETE, service role + cek peran di server):
+  - **PLN** (pengisian token): boleh dicatat **penghuni kamar** maupun **owner/property-admin**.
+  - **PDAM** (pembayaran): **hanya owner/property-admin**. Penghuni hanya melihat.
+  - Guard hanya melihat. Hapus: owner/admin semua catatan; penghuni hanya catatan PLN miliknya.
+  - Kamar dengan `water_mode = 'none'` tidak menampilkan/menerima PDAM.
+- Komponen `RoomUtilities` menampilkan kartu "pengisian/pembayaran terakhir" + riwayat 10 catatan terakhir. Komponen yang sama (varian styling PMS) dipakai di PMS `/properties/[id]/room/[roomId]`.
+
+---
+
 ## Konvensi Kode & Quality Bar
 1. **Next.js App Router (React 19):** Selalu gunakan `async` pada dynamic route params (`const { id } = await params`) dan cookies (`const cookieStore = await cookies()`).
 2. **Klien Supabase:**

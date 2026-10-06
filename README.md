@@ -35,6 +35,7 @@ Mendukung skenario fleksibel di mana satu pengguna dapat memiliki peran ganda:
   - **Skip Pilih Kamar:** Menyerahkan penempatan kamar kepada pemilik kos.
   - **Proteksi Kamar Penuh:** Jika seluruh kamar terisi penuh, tombol ajukan tetap dapat diklik dan memberikan toast error via **Shadcn Sonner**.
 - **Penempatan Kamar oleh Owner:** Pada pengajuan *Skip Pilih Kamar*, saat Owner menekan *"Setujui Sewa"*, Owner diarahkan ke modal untuk memilih unit kamar kosong yang akan ditempati sebelum disetujui. Setelah dikonfirmasi, calon penyewa otomatis menerima notifikasi berisi nama kamar yang ditempatkan.
+- **Riwayat Utilitas Kamar:** Di detail kamar, penghuni dapat melihat pengisian token PLN / pembayaran PDAM terakhir beserta riwayatnya. **PLN** bisa dicatat penghuni maupun owner; **PDAM** hanya dicatat owner. Membutuhkan migrasi `20261006_create_utility_payments.sql`.
 - **Detail Properti:** Total kamar, luas bangunan, alamat, dan tautan langsung ke dashboard.
 
 ### 4. Manajemen Profil Pengguna (`/profile`)
