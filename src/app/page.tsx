@@ -42,10 +42,9 @@ const features = [
 ];
 
 const navigation = [
-  { name: "Product", href: "#" },
-  { name: "Features", href: "#" },
-  { name: "Marketplace", href: "#" },
-  { name: "Company", href: "#" },
+  { name: "Cari Kos", href: "/properties" },
+  { name: "Fitur", href: "#" },
+  { name: "Tentang", href: "#" },
 ];
 
 function useAuthPath() {
