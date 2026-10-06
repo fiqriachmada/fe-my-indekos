@@ -63,25 +63,25 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-100 px-4 py-12 text-slate-900">
-      <div className="mx-auto w-full max-w-md rounded-2xl bg-white p-8 shadow-lg">
+    <main className="min-h-screen bg-background px-4 py-12 text-foreground transition-colors">
+      <div className="mx-auto w-full max-w-md rounded-2xl border border-border bg-card p-8 text-card-foreground shadow-lg transition-colors">
         <div className="mb-8">
           <p className="mb-2 text-sm font-semibold uppercase tracking-wider text-indigo-600">My Indekos</p>
           <h1 className="text-3xl font-bold">Login Occupant</h1>
-          <p className="mt-2 text-sm text-slate-600">Masuk menggunakan email dan password Anda.</p>
+          <p className="mt-2 text-sm text-muted-foreground">Masuk menggunakan email dan password Anda.</p>
         </div>
 
         <form className="space-y-5" onSubmit={handleLogin}>
           <div>
             <label htmlFor="email" className="mb-1 block text-sm font-medium">Email</label>
-            <input id="email" type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" placeholder="nama@email.com" />
+            <input id="email" type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" placeholder="nama@email.com" />
           </div>
           <div>
             <div className="mb-1 flex items-center justify-between">
               <label htmlFor="password" className="block text-sm font-medium">Password</label>
               <a href="/forgot-password" className="text-sm font-medium text-indigo-600 hover:text-indigo-500">Lupa password?</a>
             </div>
-            <input id="password" type="password" autoComplete="current-password" required value={password} onChange={(event) => setPassword(event.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" placeholder="Masukkan password" />
+            <input id="password" type="password" autoComplete="current-password" required value={password} onChange={(event) => setPassword(event.target.value)} className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" placeholder="Masukkan password" />
           </div>
 
           {error && <div role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</div>}
