@@ -136,7 +136,7 @@ export default function FloatingControls() {
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)))
     setUnreadCount((prev) => Math.max(0, prev - 1))
     setMenu(null)
-    router.push("/dashboard")
+    router.push("/notifications")
   }
 
   async function handleLogout() {
@@ -151,6 +151,7 @@ export default function FloatingControls() {
   const links = user
     ? [
         { href: "/dashboard", label: "Dashboard" },
+        { href: "/notifications", label: "Notifikasi" },
         { href: "/properties", label: "Cari Properti" },
         { href: "/profile", label: "Profile" },
         { href: "/settings", label: "Settings" },
@@ -250,11 +251,11 @@ export default function FloatingControls() {
                       type="button"
                       onClick={() => {
                         setMenu(null)
-                        router.push("/dashboard")
+                        router.push("/notifications")
                       }}
                       className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400"
                     >
-                      Buka Dashboard Lengkap →
+                      Buka Halaman Notifikasi Lengkap →
                     </button>
                   </div>
                 </div>
