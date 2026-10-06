@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, Zap } from 'lucide-react'
 import { InvitationActions, type Invitation } from './invitation-actions'
 
 type PropertyRow = { id: string; name: string; location: string | null }
@@ -228,6 +228,13 @@ export default async function DashboardPage() {
                     <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
                       occupant aktif
                     </span>
+                    <Link
+                      href={`/rooms/detail/${room.id}`}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-amber-500/20 bg-amber-500/10 px-2.5 py-1.5 text-xs font-medium text-amber-800 dark:text-amber-300 hover:bg-amber-500/20 transition shadow-2xs"
+                    >
+                      <Zap className="size-3" />
+                      Utilitas
+                    </Link>
                     <Link
                       href={`/rooms/detail/${room.id}`}
                       className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-accent hover:text-accent-foreground transition shadow-2xs"
