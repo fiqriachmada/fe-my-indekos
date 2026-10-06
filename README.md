@@ -30,6 +30,11 @@ Mendukung skenario fleksibel di mana satu pengguna dapat memiliki peran ganda:
 - **Filter Khusus Kos:** Memprioritaskan properti bertipe kos (`property_type: 'kosan'`) sesuai domain My Indekos.
 - **Filter Kamar Tersedia:** Opsi *"Hanya Kamar Tersedia"* untuk menyaring kos yang masih memiliki kamar kosong.
 - **Status Ketersediaan Kamar:** Indikator visual jumlah kamar kosong (hijau) atau status penuh (abu-abu).
+- **Pengajuan Sewa Kamar Fleksibel:**
+  - **Pilih Kamar Tertentu:** Calon penyewa dapat memilih langsung unit kamar kosong yang diinginkan.
+  - **Skip Pilih Kamar:** Menyerahkan penempatan kamar kepada pemilik kos.
+  - **Proteksi Kamar Penuh:** Jika seluruh kamar terisi penuh, tombol ajukan tetap dapat diklik dan memberikan toast error via **Shadcn Sonner**.
+- **Penempatan Kamar oleh Owner:** Pada pengajuan *Skip Pilih Kamar*, saat Owner menekan *"Setujui Sewa"*, Owner diarahkan ke modal untuk memilih unit kamar kosong yang akan ditempati sebelum disetujui. Setelah dikonfirmasi, calon penyewa otomatis menerima notifikasi berisi nama kamar yang ditempatkan.
 - **Detail Properti:** Total kamar, luas bangunan, alamat, dan tautan langsung ke dashboard.
 
 ### 4. Manajemen Profil Pengguna (`/profile`)

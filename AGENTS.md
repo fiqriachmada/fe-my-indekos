@@ -57,12 +57,19 @@ Aplikasi ini berbagi database Supabase yang sama dengan platform induk (Property
   - Tombol Logout diposisikan di bagian paling bawah tab bar.
 - Seluruh sub-halaman `/settings/*` dilindungi sesi auth di tingkat Server Component.
 
-### 5. Pencarian Properti (`/properties`)
+### 5. Pencarian Properti & Pengajuan Sewa (`/properties`)
 - Mengambil daftar kos aktif dari tabel `properties` beserta relasi kamar `rooms`.
 - Client component (`PropertySearchClient`) menyediakan:
   - Pencarian teks instan (nama kos dan lokasi).
   - Filter ketersediaan kamar (hanya menampilkan kos yang masih memiliki kamar kosong).
   - Filter tipe properti (default difokuskan ke kosan).
+  - Pengajuan sewa dengan opsi **Pilih Kamar Tertentu** atau **Skip Pilih Kamar (Kamar Bebas)**.
+  - Jika properti terisi penuh, tombol ajukan tetap dapat diklik dan menampilkan toast error via **Shadcn Sonner**.
+
+### 6. Persetujuan & Penempatan Kamar oleh Owner (`/dashboard`)
+- Pada pengajuan sewa dengan opsi **Skip Pilih Kamar**, ketika Owner menekan **Setujui Sewa**, sistem tidak langsung menyetujui tanpa kamar, melainkan memunculkan **Modal Pemilihan Kamar Kosong**.
+- Owner memilih salah satu unit kamar kosong yang tersedia untuk ditempatkan kepada calon penghuni.
+- Setelah dipilih dan dikonfirmasi, endpoint `/api/rooms/respond` mendaftarkan penghuni ke `room_members`, menyinkronkan `occupant_member_id` ke `rooms` & `property_members` (kompatibel dengan PMS), dan mengirim notifikasi konfirmasi ke penghuni bahwa mereka diterima di kamar tersebut.
 
 ---
 
