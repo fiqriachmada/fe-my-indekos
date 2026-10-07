@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
@@ -52,22 +52,10 @@ async function updateProfileApi(payload: {
   return await res.json()
 }
 
-export default function ProfileSettingsPage() {
+function ProfileSettingsForm({ profile, email }: { profile: ProfileData['profile']; email: string }) {
   const queryClient = useQueryClient()
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['profile'],
-    queryFn: fetchProfile,
-  })
-
-  const [firstName, setFirstName] = useState('')
-  const [lastName, setLastName] = useState('')
-
-  useEffect(() => {
-    if (data?.profile) {
-      setFirstName(data.profile.first_name ?? '')
-      setLastName(data.profile.last_name ?? '')
-    }
-  }, [data])
+  const [firstName, setFirstName] = useState(profile.first_name ?? '')
+  const [lastName, setLastName] = useState(profile.last_name ?? '')
 
   const mutation = useMutation({
     mutationFn: updateProfileApi,
@@ -93,6 +81,81 @@ export default function ProfileSettingsPage() {
     })
   }
 
+  return (
+    <form onSubmit={handleSave} className="space-y-5 max-w-xl">
+      <div>
+        <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Email Akun
+        </label>
+        <input
+          type="text"
+          disabled
+          value={email}
+          className="mt-1.5 w-full rounded-2xl border border-input bg-muted/50 px-4 py-3 text-sm text-muted-foreground cursor-not-allowed"
+        />
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Nama Depan
+          </label>
+          <input
+            type="text"
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            placeholder="Contoh: Budi"
+            className="mt-1.5 w-full rounded-2xl border border-input bg-background px-4 py-3 text-sm outline-none transition focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Nama Belakang
+          </label>
+          <input
+            type="text"
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+            placeholder="Contoh: Santoso"
+            className="mt-1.5 w-full rounded-2xl border border-input bg-background px-4 py-3 text-sm outline-none transition focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20"
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Nama Tampilan (Display Name)
+        </label>
+        <input
+          type="text"
+          readOnly
+          value={displayName || 'Otomatis digenerate'}
+          className="mt-1.5 w-full rounded-2xl border border-input bg-muted/40 px-4 py-3 text-sm text-foreground/80 cursor-default"
+        />
+        <p className="mt-1 text-xs text-muted-foreground">
+          Nama tampilan terisi otomatis dari gabungan nama depan dan belakang.
+        </p>
+      </div>
+
+      <div className="pt-2">
+        <button
+          type="submit"
+          disabled={mutation.isPending}
+          className="rounded-2xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:opacity-50"
+        >
+          {mutation.isPending ? 'Menyimpan...' : 'Simpan Perubahan'}
+        </button>
+      </div>
+    </form>
+  )
+}
+
+export default function ProfileSettingsPage() {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['profile'],
+    queryFn: fetchProfile,
+  })
+
   if (isLoading) {
     return (
       <div className="py-8 text-center text-sm text-muted-foreground">
@@ -101,15 +164,13 @@ export default function ProfileSettingsPage() {
     )
   }
 
-  if (error) {
+  if (error || !data) {
     return (
       <div className="py-8 text-center text-sm text-red-500">
         Gagal memuat data: {error instanceof Error ? error.message : 'Terjadi kesalahan.'}
       </div>
     )
   }
-
-  const email = data?.email ?? ''
 
   return (
     <div className="space-y-6">
@@ -120,71 +181,11 @@ export default function ProfileSettingsPage() {
         </p>
       </div>
 
-      <form onSubmit={handleSave} className="space-y-5 max-w-xl">
-        <div>
-          <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Email Akun
-          </label>
-          <input
-            type="text"
-            disabled
-            value={email}
-            className="mt-1.5 w-full rounded-2xl border border-input bg-muted/50 px-4 py-3 text-sm text-muted-foreground cursor-not-allowed"
-          />
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Nama Depan
-            </label>
-            <input
-              type="text"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              placeholder="Contoh: Budi"
-              className="mt-1.5 w-full rounded-2xl border border-input bg-background px-4 py-3 text-sm outline-none transition focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Nama Belakang
-            </label>
-            <input
-              type="text"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-              placeholder="Contoh: Santoso"
-              className="mt-1.5 w-full rounded-2xl border border-input bg-background px-4 py-3 text-sm outline-none transition focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20"
-            />
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Nama Tampilan (Display Name)
-          </label>
-          <input
-            type="text"
-            readOnly
-            value={displayName || 'Otomatis digenerate'}
-            className="mt-1.5 w-full rounded-2xl border border-input bg-muted/40 px-4 py-3 text-sm text-foreground/80 cursor-default"
-          />
-          <p className="mt-1 text-xs text-muted-foreground">
-            Nama tampilan terisi otomatis dari gabungan nama depan dan belakang.
-          </p>
-        </div>
-
-        <div className="pt-2">
-          <button
-            type="submit"
-            disabled={mutation.isPending}
-            className="rounded-2xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:opacity-50"
-          >
-            {mutation.isPending ? 'Menyimpan...' : 'Simpan Perubahan'}
-          </button>
-        </div>
-      </form>
+      <ProfileSettingsForm
+        key={data.profile.id}
+        profile={data.profile}
+        email={data.email}
+      />
     </div>
   )
 }
