@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { ComputerDesktopIcon, MoonIcon, SunIcon } from '@heroicons/react/24/outline'
 
-type Theme = 'light' | 'dark' | 'system' | 'brutalism'
+type Theme = 'light' | 'dark' | 'system' | 'brutalism' | 'brutalism-dark'
 
 const STORAGE_KEY = 'my-indekos-theme'
 const THEME_EVENT = 'my-indekos-theme-change'
@@ -14,9 +14,15 @@ const options = [
   { value: 'system', label: 'System', description: 'Ikuti pengaturan perangkat', Icon: ComputerDesktopIcon },
   {
     value: 'brutalism',
-    label: 'Neo-Brutalism',
-    description: 'Kontras tajam, border tebal & bayangan tegas',
+    label: 'Neo-Brutalism Light',
+    description: 'Kontras tajam, kertas krem, border tebal & bayangan tegas',
     Icon: SunIcon,
+  },
+  {
+    value: 'brutalism-dark',
+    label: 'Neo-Brutalism Dark',
+    description: 'Cyber-brutalism gelap, border kontras & aksen neon',
+    Icon: MoonIcon,
   },
 ] as const
 

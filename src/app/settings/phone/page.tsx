@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown } from "lucide-react";
+import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import {
   COUNTRIES,
@@ -85,6 +86,7 @@ export default function PhoneSettingsPage() {
     setMessage(null);
     const fullNumber = formatFullPhoneNumber(phone, selectedCountry.dialCode);
     if (!fullNumber) {
+      toast.error("Nomor tidak valid", { description: "Masukkan nomor telepon yang valid." });
       setMessage("Masukkan nomor telepon yang valid.");
       setBusy(false);
       return;
@@ -96,8 +98,9 @@ export default function PhoneSettingsPage() {
     });
     setBusy(false);
     if (updateError) {
+      toast.error("Gagal mengirim OTP", { description: updateError.message });
       setMessage(
-        "Kode OTP belum dapat dikirim. Pastikan nomor aktif dan valid.",
+        "Kode OTP belum dapat dikirim: " + updateError.message,
       );
       return;
     }
@@ -106,6 +109,7 @@ export default function PhoneSettingsPage() {
       label: label.trim(),
       isPrimary: !phones?.length || editing?.is_primary === true,
     });
+    toast.success("OTP Terkirim", { description: `Kode OTP sudah dikirim ke ${fullNumber}` });
     setMessage(`Kode OTP sudah dikirim ke ${fullNumber}.`);
   }
 
@@ -118,6 +122,7 @@ export default function PhoneSettingsPage() {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user || !pendingVerification) {
+      toast.error("Sesi tidak ditemukan", { description: "Sesi verifikasi tidak ditemukan." });
       setMessage("Sesi verifikasi tidak ditemukan.");
       setBusy(false);
       return;
@@ -128,6 +133,7 @@ export default function PhoneSettingsPage() {
       type: "phone_change",
     });
     if (verifyError) {
+      toast.error("Verifikasi Gagal", { description: verifyError.message || "Kode OTP salah atau kedaluwarsa." });
       setMessage("Kode OTP salah atau sudah kedaluwarsa.");
       setBusy(false);
       return;
@@ -148,11 +154,9 @@ export default function PhoneSettingsPage() {
       : await supabase.from("user_phone_numbers").insert(values);
     setBusy(false);
     if (result.error) {
-      setMessage(
-        result.error.code === "23505"
-          ? "Nomor tersebut sudah tersimpan."
-          : "Nomor belum dapat disimpan.",
-      );
+      const errMsg = result.error.code === "23505" ? "Nomor tersebut sudah tersimpan." : "Nomor belum dapat disimpan.";
+      toast.error("Gagal menyimpan", { description: errMsg });
+      setMessage(errMsg);
       return;
     }
     setPhone("");
@@ -160,11 +164,9 @@ export default function PhoneSettingsPage() {
     setOtp("");
     setEditing(null);
     setPendingVerification(null);
-    setMessage(
-      editing
-        ? "Nomor berhasil diperbarui."
-        : "Nomor berhasil ditambahkan dan diverifikasi.",
-    );
+    const successMsg = editing ? "Nomor telepon berhasil diperbarui." : "Nomor telepon berhasil diverifikasi dan disimpan.";
+    toast.success("Berhasil!", { description: successMsg });
+    setMessage(successMsg);
     await mutate();
   }
 
@@ -175,10 +177,11 @@ export default function PhoneSettingsPage() {
       .delete()
       .eq("id", id);
     if (deleteError) {
+      toast.error("Gagal menghapus nomor", { description: deleteError.message });
       setMessage("Nomor belum dapat dihapus.");
       return;
     }
-    setMessage("Nomor berhasil dihapus.");
+    toast.success("Nomor berhasil dihapus");
     await mutate();
   }
 

@@ -163,3 +163,38 @@
   border-width: 2px !important;
   box-shadow: 3px 3px 0px #000000 !important;
 }
+
+.brutalism-dark {
+  color-scheme: dark;
+  --background: #121214;
+  --foreground: #f4f4f5;
+  --card: #18181b;
+  --card-foreground: #f4f4f5;
+  --popover: #18181b;
+  --popover-foreground: #f4f4f5;
+  --primary: #a3e635;
+  --primary-foreground: #000000;
+  --secondary: #27272a;
+  --secondary-foreground: #f4f4f5;
+  --muted: #27272a;
+  --muted-foreground: #a1a1aa;
+  --accent: #f59e0b;
+  --accent-foreground: #000000;
+  --destructive: #ef4444;
+  --border: #f4f4f5;
+  --input: #27272a;
+  --ring: #a3e635;
+  --radius: 0px;
+}
+
+.brutalism-dark * {
+  border-color: #52525b !important;
+}
+
+.brutalism-dark button,
+.brutalism-dark input,
+.brutalism-dark .card,
+.brutalism-dark [class*="rounded"] {
+  border-width: 2px !important;
+  box-shadow: 3px 3px 0px #a3e635 !important;
+}

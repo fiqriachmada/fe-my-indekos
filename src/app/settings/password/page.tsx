@@ -1,6 +1,7 @@
 'use client'
 
 import { FormEvent, useState } from 'react'
+import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { PasswordInput } from '@/components/password-input'
 
@@ -17,14 +18,24 @@ export default function PasswordSettingsPage() {
     event.preventDefault()
     setError(null)
     setMessage(null)
-    if (password.length < 8) return setError('Password minimal 8 karakter.')
-    if (password !== confirmPassword) return setError('Konfirmasi password tidak cocok.')
+    if (password.length < 8) {
+      toast.error('Password minimal 8 karakter')
+      return setError('Password minimal 8 karakter.')
+    }
+    if (password !== confirmPassword) {
+      toast.error('Konfirmasi password tidak cocok')
+      return setError('Konfirmasi password tidak cocok.')
+    }
     setLoading(true)
     const { error: updateError } = await createClient().auth.updateUser({ password })
     setLoading(false)
-    if (updateError) return setError('Password belum dapat diubah. Silakan coba lagi.')
+    if (updateError) {
+      toast.error('Gagal mengubah password', { description: updateError.message })
+      return setError('Password belum dapat diubah. Silakan coba lagi.')
+    }
     setPassword('')
     setConfirmPassword('')
+    toast.success('Password berhasil diubah')
     setMessage('Password berhasil diubah.')
   }
 

@@ -53,10 +53,13 @@ export default function FloatingControls() {
   useEffect(() => {
     const media = window.matchMedia("(prefers-color-scheme: dark)")
     const apply = () => {
-      document.documentElement.classList.remove("dark", "brutalism")
+      document.documentElement.classList.remove("dark", "brutalism", "brutalism-dark")
       if (theme === "brutalism") {
         document.documentElement.classList.add("brutalism")
         document.documentElement.style.colorScheme = "light"
+      } else if (theme === "brutalism-dark") {
+        document.documentElement.classList.add("brutalism-dark")
+        document.documentElement.style.colorScheme = "dark"
       } else {
         const dark = theme === "dark" || (theme === "system" && media.matches)
         document.documentElement.classList.toggle("dark", dark)
@@ -186,7 +189,8 @@ export default function FloatingControls() {
     ["light", "Light", SunIcon],
     ["dark", "Dark", MoonIcon],
     ["system", "System", ComputerDesktopIcon],
-    ["brutalism", "Neo-Brutalism", SunIcon],
+    ["brutalism", "Neo-Brutalism Light", SunIcon],
+    ["brutalism-dark", "Neo-Brutalism Dark", MoonIcon],
   ] as const
   const ActiveIcon = options.find(([value]) => value === theme)?.[2] ?? ComputerDesktopIcon
   const links = user
