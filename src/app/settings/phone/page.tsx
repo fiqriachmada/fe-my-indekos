@@ -2,7 +2,13 @@
 
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { ChevronDown } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import {
+  COUNTRIES,
+  cleanLocalPhoneNumber,
+  formatFullPhoneNumber,
+} from "@/lib/phone-countries";
 
 type Phone = {
   id: string;
@@ -11,6 +17,7 @@ type Phone = {
   is_primary: boolean;
   verified_at: string | null;
 };
+
 const inputClass =
   "w-full rounded-lg border border-input bg-background px-3 py-2.5 text-foreground outline-none transition-colors focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200";
 
@@ -45,6 +52,7 @@ export default function PhoneSettingsPage() {
     await queryClient.invalidateQueries({ queryKey: ["user-phone-numbers"] });
   }
 
+  const [selectedCountry, setSelectedCountry] = useState(COUNTRIES[0]);
   const [phone, setPhone] = useState("");
   const [label, setLabel] = useState("");
   const [editing, setEditing] = useState<Phone | null>(null);
@@ -57,28 +65,48 @@ export default function PhoneSettingsPage() {
     isPrimary: boolean;
   } | null>(null);
 
+  const handlePhoneInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawVal = e.target.value;
+    const cleaned = cleanLocalPhoneNumber(rawVal, selectedCountry.dialCode);
+    setPhone(cleaned);
+  };
+
+  const handleSelectCountry = (countryCode: string) => {
+    const found = COUNTRIES.find((c) => c.code === countryCode) || COUNTRIES[0];
+    setSelectedCountry(found);
+    if (phone) {
+      setPhone(cleanLocalPhoneNumber(phone, found.dialCode));
+    }
+  };
+
   async function sendOtp(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
     setMessage(null);
+    const fullNumber = formatFullPhoneNumber(phone, selectedCountry.dialCode);
+    if (!fullNumber) {
+      setMessage("Masukkan nomor telepon yang valid.");
+      setBusy(false);
+      return;
+    }
+
     const supabase = createClient();
-    const normalizedPhone = phone.trim();
     const { error: updateError } = await supabase.auth.updateUser({
-      phone: normalizedPhone,
+      phone: fullNumber,
     });
     setBusy(false);
     if (updateError) {
       setMessage(
-        "Kode OTP belum dapat dikirim. Pastikan nomor menggunakan format internasional, misalnya +62812...",
+        "Kode OTP belum dapat dikirim. Pastikan nomor aktif dan valid.",
       );
       return;
     }
     setPendingVerification({
-      phone: normalizedPhone,
+      phone: fullNumber,
       label: label.trim(),
       isPrimary: !phones?.length || editing?.is_primary === true,
     });
-    setMessage(`Kode OTP sudah dikirim ke ${normalizedPhone}.`);
+    setMessage(`Kode OTP sudah dikirim ke ${fullNumber}.`);
   }
 
   async function verifyOtp(event: React.FormEvent<HTMLFormElement>) {
@@ -184,6 +212,21 @@ export default function PhoneSettingsPage() {
     await mutate();
   }
 
+  const handleStartEdit = (item: Phone) => {
+    const matchingCountry =
+      COUNTRIES.find((c) => item.phone_number.startsWith(c.dialCode)) ||
+      COUNTRIES[0];
+    setSelectedCountry(matchingCountry);
+    const localNum = cleanLocalPhoneNumber(
+      item.phone_number,
+      matchingCountry.dialCode,
+    );
+    setEditing(item);
+    setPhone(localNum);
+    setLabel(item.label ?? "");
+    setPendingVerification(null);
+  };
+
   return (
     <div className="max-w-2xl space-y-6">
       <div>
@@ -192,6 +235,7 @@ export default function PhoneSettingsPage() {
           Tambahkan lebih dari satu nomor untuk akun Anda.
         </p>
       </div>
+
       <form
         onSubmit={pendingVerification ? verifyOtp : sendOtp}
         className="space-y-4 rounded-xl border border-border bg-card p-5 text-card-foreground"
@@ -202,15 +246,50 @@ export default function PhoneSettingsPage() {
               <label htmlFor="phone" className="mb-1 block text-sm font-medium">
                 Nomor telepon
               </label>
-              <input
-                id="phone"
-                required
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className={inputClass}
-                placeholder="+62 812..."
-              />
+
+              {/* Country Flag & Dial Selector with Input */}
+              <div className="flex items-stretch rounded-lg border border-input bg-background transition-colors focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-200">
+                <div className="relative flex items-center border-r border-input">
+                  <div className="flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium">
+                    <span className="text-lg leading-none select-none">
+                      {selectedCountry.flag}
+                    </span>
+                    <span className="font-semibold text-foreground/80">
+                      {selectedCountry.dialCode}
+                    </span>
+                    <ChevronDown size={14} className="text-muted-foreground pointer-events-none" />
+                  </div>
+                  <select
+                    aria-label="Pilih negara dan kode telepon"
+                    value={selectedCountry.code}
+                    onChange={(e) => handleSelectCountry(e.target.value)}
+                    className="absolute inset-0 cursor-pointer opacity-0"
+                  >
+                    {COUNTRIES.map((c) => (
+                      <option key={c.code} value={c.code}>
+                        {c.flag} {c.name} ({c.dialCode})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <input
+                  id="phone"
+                  required
+                  type="tel"
+                  inputMode="tel"
+                  value={phone}
+                  onChange={handlePhoneInputChange}
+                  className="w-full bg-transparent px-3 py-2.5 text-sm outline-none placeholder:text-muted-foreground"
+                  placeholder={selectedCountry.formatPlaceholder}
+                />
+              </div>
+
+              <p className="mt-1 text-xs text-muted-foreground">
+                Ketik nomor tanpa angka 0 di depan (misal: jika 0822..., otomatis menjadi 822...).
+              </p>
             </div>
+
             <div>
               <label htmlFor="label" className="mb-1 block text-sm font-medium">
                 Label{" "}
@@ -244,10 +323,11 @@ export default function PhoneSettingsPage() {
             />
           </div>
         )}
+
         <div className="flex gap-2">
           <button
             disabled={busy}
-            className="rounded-lg bg-indigo-600 px-4 py-2.5 font-semibold text-white disabled:opacity-60"
+            className="rounded-lg bg-indigo-600 px-4 py-2.5 font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-60"
           >
             {busy
               ? "Memproses..."
@@ -265,13 +345,14 @@ export default function PhoneSettingsPage() {
                 setLabel("");
                 setOtp("");
               }}
-              className="rounded-lg border border-border px-4 py-2.5"
+              className="rounded-lg border border-border px-4 py-2.5 transition hover:bg-accent"
             >
               Batal
             </button>
           )}
         </div>
       </form>
+
       {message && (
         <p
           role="status"
@@ -288,6 +369,7 @@ export default function PhoneSettingsPage() {
           Nomor telepon belum dapat dimuat.
         </p>
       )}
+
       <div className="space-y-3">
         {isLoading ? (
           <p className="text-sm text-muted-foreground">Memuat nomor...</p>
@@ -313,12 +395,8 @@ export default function PhoneSettingsPage() {
               <div className="flex shrink-0 gap-2">
                 <button
                   type="button"
-                  onClick={() => {
-                    setEditing(item);
-                    setPhone(item.phone_number);
-                    setLabel(item.label ?? "");
-                  }}
-                  className="text-sm text-indigo-500"
+                  onClick={() => handleStartEdit(item)}
+                  className="text-sm font-medium text-indigo-600 hover:underline dark:text-indigo-400"
                 >
                   Edit
                 </button>
@@ -326,7 +404,7 @@ export default function PhoneSettingsPage() {
                   <button
                     type="button"
                     onClick={() => makePrimary(item)}
-                    className="text-sm text-muted-foreground"
+                    className="text-sm text-muted-foreground hover:text-foreground"
                   >
                     Jadikan utama
                   </button>
@@ -334,7 +412,7 @@ export default function PhoneSettingsPage() {
                 <button
                   type="button"
                   onClick={() => deletePhone(item.id)}
-                  className="text-sm text-red-500"
+                  className="text-sm text-red-500 hover:text-red-600"
                 >
                   Hapus
                 </button>
