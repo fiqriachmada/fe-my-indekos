@@ -177,7 +177,10 @@ export async function PATCH(request: Request) {
         },
         { onConflict: 'id' }
       )
-      if (dbError) throw dbError
+      if (dbError) {
+        console.error('dbError upserting profiles:', dbError)
+        return NextResponse.json({ error: dbError.message }, { status: 400 })
+      }
     }
 
     const authMetadataUpdates: Record<string, unknown> = {}
@@ -187,9 +190,15 @@ export async function PATCH(request: Request) {
     if (avatar_url !== undefined) authMetadataUpdates.avatar_url = avatar_url
 
     if (Object.keys(authMetadataUpdates).length > 0) {
-      await supabase.auth.updateUser({
-        data: authMetadataUpdates,
+      const { error: authUpdateError } = await admin.auth.admin.updateUserById(user.id, {
+        user_metadata: {
+          ...user.user_metadata,
+          ...authMetadataUpdates,
+        },
       })
+      if (authUpdateError) {
+        console.warn('Warning updating user metadata via admin:', authUpdateError.message)
+      }
     }
 
     return NextResponse.json({ success: true, message: 'Profile updated' })

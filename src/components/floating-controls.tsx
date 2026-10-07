@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Bars3Icon, BellIcon, ChevronDownIcon, ComputerDesktopIcon, MoonIcon, SunIcon } from "@heroicons/react/24/outline"
 
-type Theme = "light" | "dark" | "system"
+type Theme = "light" | "dark" | "system" | "brutalism"
 type Menu = "theme" | "navigation" | "notifications" | null
 
 type FloatingNotification = {
@@ -32,9 +32,15 @@ export default function FloatingControls() {
   useEffect(() => {
     const media = window.matchMedia("(prefers-color-scheme: dark)")
     const apply = () => {
-      const dark = theme === "dark" || (theme === "system" && media.matches)
-      document.documentElement.classList.toggle("dark", dark)
-      document.documentElement.style.colorScheme = dark ? "dark" : "light"
+      document.documentElement.classList.remove("dark", "brutalism")
+      if (theme === "brutalism") {
+        document.documentElement.classList.add("brutalism")
+        document.documentElement.style.colorScheme = "light"
+      } else {
+        const dark = theme === "dark" || (theme === "system" && media.matches)
+        document.documentElement.classList.toggle("dark", dark)
+        document.documentElement.style.colorScheme = dark ? "dark" : "light"
+      }
     }
     apply()
     media.addEventListener("change", apply)

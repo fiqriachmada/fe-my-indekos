@@ -128,3 +128,38 @@
     @apply font-sans;
   }
 }
+
+.brutalism {
+  color-scheme: light;
+  --background: #fffdf0;
+  --foreground: #000000;
+  --card: #ffffff;
+  --card-foreground: #000000;
+  --popover: #ffffff;
+  --popover-foreground: #000000;
+  --primary: #000000;
+  --primary-foreground: #ffffff;
+  --secondary: #ffde59;
+  --secondary-foreground: #000000;
+  --muted: #f4f0db;
+  --muted-foreground: #333333;
+  --accent: #ff914d;
+  --accent-foreground: #000000;
+  --destructive: #ff3131;
+  --border: #000000;
+  --input: #000000;
+  --ring: #000000;
+  --radius: 0px;
+}
+
+.brutalism * {
+  border-color: #000000 !important;
+}
+
+.brutalism button,
+.brutalism input,
+.brutalism .card,
+.brutalism [class*="rounded"] {
+  border-width: 2px !important;
+  box-shadow: 3px 3px 0px #000000 !important;
+}
