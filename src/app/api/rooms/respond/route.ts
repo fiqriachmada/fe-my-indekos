@@ -100,10 +100,23 @@ export async function POST(request: Request) {
                 property_id: notif.property_id,
                 user_id: tenantUserId,
                 role_id: occupantRoleId,
+                role: 'occupant',
+                status_member_property: 'active',
+                status: 'active',
+                status_id: 1,
               })
               .select('id')
               .single()
             memberId = newPM?.id
+          } else if (existingPM) {
+            await admin
+              .from('property_members')
+              .update({
+                status_member_property: 'active',
+                status: 'active',
+                status_id: 1,
+              })
+              .eq('id', existingPM.id)
           }
 
           // 3. Update occupant_member_id pada rooms jika ada memberId
@@ -333,6 +346,19 @@ export async function POST(request: Request) {
       const propertyName = notif.property?.name || 'Properti'
 
       if (action === 'approved') {
+        // Update status_member_property menjadi 'active' di property_members
+        if (notif.property_id) {
+          await admin
+            .from('property_members')
+            .update({
+              status_member_property: 'active',
+              status: 'active',
+              status_id: 1,
+            })
+            .eq('property_id', notif.property_id)
+            .eq('user_id', user.id)
+        }
+
         // Update status notifikasi
         await admin
           .from('notifications')
