@@ -21,8 +21,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${jakartaSans.variable} antialiased`}>
+    <html lang="en" className={jakartaSans.variable}>
+      <body className="font-sans antialiased">
         <QueryProvider>{children}</QueryProvider>
         <FloatingControls />
         <Toaster position="top-right" richColors />
