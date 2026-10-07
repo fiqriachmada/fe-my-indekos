@@ -43,7 +43,7 @@ export function SettingsNav() {
         item.desc.toLowerCase().includes(q) ||
         item.href.toLowerCase().includes(q)
     )
-  }, [tabs, searchQuery])
+  }, [searchQuery])
 
   const activeTab = tabs.find((t) => t.href === pathname)
 

@@ -9,7 +9,8 @@ import { useRouter } from 'next/navigation'
 export default function UsernameSettingsPage() {
   const router = useRouter()
   const [username, setUsername] = useState('')
-  const [usernameLastChanged, setUsernameLastChanged] = useState<string | null>(null)
+  const [usernameChangeAllowed, setUsernameChangeAllowed] = useState(true)
+  const [usernameLockedUntil, setUsernameLockedUntil] = useState<Date | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
@@ -38,27 +39,21 @@ export default function UsernameSettingsPage() {
           .maybeSingle(),
       ])
 
+      const lastChanged = uRes.data?.last_changed_at ?? null
       setUsername(uRes.data?.username || pRes.data?.username || '')
-      setUsernameLastChanged(uRes.data?.last_changed_at ?? null)
+      if (lastChanged) {
+        const lockedDate = new Date(new Date(lastChanged).getTime() + 24 * 60 * 60 * 1000)
+        setUsernameLockedUntil(lockedDate)
+        setUsernameChangeAllowed(lockedDate.getTime() <= Date.now())
+      } else {
+        setUsernameLockedUntil(null)
+        setUsernameChangeAllowed(true)
+      }
       setLoading(false)
     }
 
     void loadData()
   }, [router])
-
-  const [usernameChangeAllowed, setUsernameChangeAllowed] = useState(true)
-  const [usernameLockedUntil, setUsernameLockedUntil] = useState<Date | null>(null)
-
-  useEffect(() => {
-    if (usernameLastChanged) {
-      const lockedDate = new Date(new Date(usernameLastChanged).getTime() + 24 * 60 * 60 * 1000)
-      setUsernameLockedUntil(lockedDate)
-      setUsernameChangeAllowed(lockedDate.getTime() <= Date.now())
-    } else {
-      setUsernameLockedUntil(null)
-      setUsernameChangeAllowed(true)
-    }
-  }, [usernameLastChanged])
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
@@ -86,7 +81,11 @@ export default function UsernameSettingsPage() {
       if (error) throw error
 
       setUsername(data.username)
-      setUsernameLastChanged(data.last_changed_at)
+      if (data.last_changed_at) {
+        const lockedDate = new Date(new Date(data.last_changed_at).getTime() + 24 * 60 * 60 * 1000)
+        setUsernameLockedUntil(lockedDate)
+        setUsernameChangeAllowed(lockedDate.getTime() <= Date.now())
+      }
       toast.success('Username berhasil diperbarui')
       router.refresh()
     } catch (err: unknown) {
