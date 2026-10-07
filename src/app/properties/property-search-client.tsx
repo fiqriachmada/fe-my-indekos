@@ -34,6 +34,8 @@ type PropertyItem = {
   id: string
   name: string
   location: string | null
+  latitude?: number | null
+  longitude?: number | null
   property_type: string | null
   building_area: number | null
   land_area: number | null
@@ -337,10 +339,34 @@ export default function PropertySearchClient({
                   </h3>
 
                   {property.location && (
-                    <p className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <MapPin className="h-3.5 w-3.5 shrink-0 text-indigo-500" />
-                      <span className="line-clamp-1">{property.location}</span>
-                    </p>
+                    <div className="mt-2 flex items-center justify-between gap-2">
+                      <p className="flex items-center gap-1.5 text-xs text-muted-foreground min-w-0">
+                        <MapPin className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
+                        <span className="line-clamp-1">{property.location}</span>
+                      </p>
+                      {property.latitude != null && property.longitude != null ? (
+                        <a
+                          href={`https://www.google.com/maps/search/?api=1&query=${property.latitude},${property.longitude}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title="Buka lokasi di Google Maps"
+                          className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-border bg-background px-2 py-0.5 text-[11px] font-medium text-foreground shadow-2xs transition hover:border-indigo-400 hover:bg-indigo-50/50 hover:text-indigo-600 dark:hover:bg-indigo-950/40 dark:hover:text-indigo-300"
+                        >
+                          <svg className="size-3.5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2Z" fill="#EA4335"/>
+                            <circle cx="12" cy="9" r="2.8" fill="#FFFFFF"/>
+                            <path d="M12 2C8.13 2 5 5.13 5 9C5 10.3 5.37 11.51 6.01 12.54L12 2C12 2 12 2 12 2Z" fill="#4285F4"/>
+                            <path d="M12 22S19 14.25 19 9C19 7.7 18.63 6.49 17.99 5.46L12 22Z" fill="#34A853"/>
+                            <path d="M6.01 12.54C7.15 14.39 9.17 17.38 12 22C12 22 12 22 12 22L17.99 5.46C17.37 4.44 16.48 3.6 15.43 3.03L6.01 12.54Z" fill="#FBBC04" fillOpacity="0.8"/>
+                          </svg>
+                          <span>Maps</span>
+                        </a>
+                      ) : (
+                        <span className="shrink-0 text-[10px] text-muted-foreground/50">
+                          (Tanpa koordinat)
+                        </span>
+                      )}
+                    </div>
                   )}
 
                   <div className="mt-4 flex items-center gap-4 border-t border-border pt-4 text-xs text-muted-foreground">
@@ -507,10 +533,32 @@ export default function PropertySearchClient({
                 {selectedProperty.name}
               </p>
               {selectedProperty.location && (
-                <p className="mt-0.5 text-xs text-muted-foreground flex items-center gap-1">
-                  <MapPin className="h-3 w-3 text-indigo-500 shrink-0" />
-                  {selectedProperty.location}
-                </p>
+                <div className="mt-1 flex items-center justify-between gap-2">
+                  <p className="text-xs text-muted-foreground flex items-center gap-1 min-w-0">
+                    <MapPin className="h-3 w-3 text-muted-foreground/70 shrink-0" />
+                    <span className="line-clamp-1">{selectedProperty.location}</span>
+                  </p>
+                  {selectedProperty.latitude != null && selectedProperty.longitude != null ? (
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${selectedProperty.latitude},${selectedProperty.longitude}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border bg-background px-2 py-0.5 text-[10px] font-semibold text-foreground hover:text-indigo-600 hover:border-indigo-400 transition"
+                      title="Buka di Google Maps"
+                    >
+                      <svg className="size-3" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2Z" fill="#EA4335"/>
+                        <circle cx="12" cy="9" r="2.8" fill="#FFFFFF"/>
+                        <path d="M12 2C8.13 2 5 5.13 5 9C5 10.3 5.37 11.51 6.01 12.54L12 2C12 2 12 2 12 2Z" fill="#4285F4"/>
+                        <path d="M12 22S19 14.25 19 9C19 7.7 18.63 6.49 17.99 5.46L12 22Z" fill="#34A853"/>
+                        <path d="M6.01 12.54C7.15 14.39 9.17 17.38 12 22C12 22 12 22 12 22L17.99 5.46C17.37 4.44 16.48 3.6 15.43 3.03L6.01 12.54Z" fill="#FBBC04" fillOpacity="0.8"/>
+                      </svg>
+                      <span>Maps</span>
+                    </a>
+                  ) : (
+                    <span className="shrink-0 text-[10px] text-muted-foreground/50">(Tanpa koordinat)</span>
+                  )}
+                </div>
               )}
             </div>
 

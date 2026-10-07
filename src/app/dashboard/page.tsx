@@ -18,7 +18,7 @@ export default async function DashboardPage() {
 
   const admin = createAdminClient()
 
-  const [ownedRes, memberRes, roomRes, notifRes] = await Promise.all([
+  const [ownedRes, memberRes, roomRes, notifRes, profileRes] = await Promise.all([
     // Properties the user owns directly (owner_id), even without a membership row.
     admin.from('properties').select('id, name, location').eq('owner_id', user.id),
     // Property-scoped roles: owner, property-admin, guard, occupant.
@@ -41,7 +41,20 @@ export default async function DashboardPage() {
       .eq('status', 'pending')
       .order('created_at', { ascending: false })
       .returns<Invitation[]>(),
+    // User profile to get username or display_name
+    admin
+      .from('profiles')
+      .select('username, display_name, first_name')
+      .eq('id', user.id)
+      .maybeSingle(),
   ])
+
+  const greetingName =
+    profileRes.data?.username?.trim() ||
+    profileRes.data?.display_name?.trim() ||
+    profileRes.data?.first_name?.trim() ||
+    user.email?.split('@')[0] ||
+    'Pengguna'
 
   // Filter properti yang dikelola:
   // Hanya role manajerial (owner, property-admin, guard) yang masuk ke "Properti yang saya kelola".
@@ -115,7 +128,7 @@ export default async function DashboardPage() {
           <div>
             <p className="text-sm font-semibold uppercase tracking-wider text-indigo-600">My Indekos</p>
             <h1 className="mt-2 text-4xl font-bold">Dashboard</h1>
-            <p className="mt-3 text-muted-foreground">Selamat datang kembali, {user.email}.</p>
+            <p className="mt-3 text-muted-foreground">Selamat datang kembali, {greetingName}.</p>
           </div>
           <div>
             <Link

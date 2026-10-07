@@ -23,6 +23,8 @@ export default async function PropertiesPage() {
       id,
       name,
       location,
+      latitude,
+      longitude,
       property_type,
       building_area,
       land_area,
