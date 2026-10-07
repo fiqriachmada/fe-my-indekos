@@ -47,9 +47,17 @@ export default function AvatarSettingsPage() {
     void loadData()
   }, [router])
 
+  const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5 MB
+
   const handleSelectFile = (file: File) => {
     if (!file.type.startsWith('image/')) {
       toast.error('File harus berupa gambar (JPG, PNG, atau WEBP)')
+      return
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error('Ukuran file terlalu besar', {
+        description: 'Maksimal ukuran file foto adalah 5MB.',
+      })
       return
     }
     const reader = new FileReader()
@@ -213,7 +221,7 @@ export default function AvatarSettingsPage() {
                 Tarik foto ke sini atau pilih berkas
               </p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Mendukung Drag & Drop JPG, PNG, atau WEBP. Dilengkapi fitur zoom & resize.
+                Maksimal ukuran file: <span className="font-semibold text-foreground/80">5 MB</span> (JPG, PNG, atau WEBP). Dilengkapi fitur zoom & resize.
               </p>
             </div>
 
