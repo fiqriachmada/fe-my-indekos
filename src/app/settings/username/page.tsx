@@ -40,7 +40,8 @@ export default function UsernameSettingsPage() {
       ])
 
       const lastChanged = uRes.data?.last_changed_at ?? null
-      setUsername(uRes.data?.username || pRes.data?.username || '')
+      const rawUser = uRes.data?.username || pRes.data?.username || ''
+      setUsername(rawUser.replace(/^@+/, ''))
       if (lastChanged) {
         const lockedDate = new Date(new Date(lastChanged).getTime() + 24 * 60 * 60 * 1000)
         setUsernameLockedUntil(lockedDate)
@@ -80,8 +81,8 @@ export default function UsernameSettingsPage() {
 
       if (error) throw error
 
-      setUsername(data.username)
-      if (data.last_changed_at) {
+      setUsername(typeof data?.username === 'string' ? data.username.replace(/^@+/, '') : cleanUsername)
+      if (data?.last_changed_at) {
         const lockedDate = new Date(new Date(data.last_changed_at).getTime() + 24 * 60 * 60 * 1000)
         setUsernameLockedUntil(lockedDate)
         setUsernameChangeAllowed(lockedDate.getTime() <= Date.now())
