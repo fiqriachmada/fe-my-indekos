@@ -46,11 +46,19 @@ export default function UsernameSettingsPage() {
     void loadData()
   }, [router])
 
-  const usernameLockedUntil = usernameLastChanged
-    ? new Date(new Date(usernameLastChanged).getTime() + 24 * 60 * 60 * 1000)
-    : null
-  const usernameChangeAllowed =
-    !usernameLockedUntil || usernameLockedUntil.getTime() <= Date.now()
+  const [usernameChangeAllowed, setUsernameChangeAllowed] = useState(true)
+  const [usernameLockedUntil, setUsernameLockedUntil] = useState<Date | null>(null)
+
+  useEffect(() => {
+    if (usernameLastChanged) {
+      const lockedDate = new Date(new Date(usernameLastChanged).getTime() + 24 * 60 * 60 * 1000)
+      setUsernameLockedUntil(lockedDate)
+      setUsernameChangeAllowed(lockedDate.getTime() <= Date.now())
+    } else {
+      setUsernameLockedUntil(null)
+      setUsernameChangeAllowed(true)
+    }
+  }, [usernameLastChanged])
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()

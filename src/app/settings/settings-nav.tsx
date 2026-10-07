@@ -17,6 +17,15 @@ import {
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
+const tabs = [
+  { href: '/settings/profile', label: 'Profil Saya', desc: 'Nama depan & belakang', Icon: User },
+  { href: '/settings/avatar', label: 'Foto Profil', desc: 'Unggah & ganti foto akun', Icon: Camera },
+  { href: '/settings/username', label: 'Username', desc: 'Ubah @username unik', Icon: AtSign },
+  { href: '/settings/phone', label: 'Nomor Telepon', desc: 'Kontak aktif & WhatsApp', Icon: Phone },
+  { href: '/settings/password', label: 'Password', desc: 'Ubah kata sandi akun', Icon: KeyRound },
+  { href: '/settings/theme', label: 'Tema Tampilan', desc: 'Mode gelap, terang, sistem', Icon: Palette },
+]
+
 export function SettingsNav() {
   const pathname = usePathname()
   const router = useRouter()
@@ -24,15 +33,6 @@ export function SettingsNav() {
   const [searchQuery, setSearchQuery] = useState('')
   const [comboboxOpen, setComboboxOpen] = useState(false)
   const comboboxRef = useRef<HTMLDivElement>(null)
-
-  const tabs = [
-    { href: '/settings/profile', label: 'Profil Saya', desc: 'Nama depan & belakang', Icon: User },
-    { href: '/settings/avatar', label: 'Foto Profil', desc: 'Unggah & ganti foto akun', Icon: Camera },
-    { href: '/settings/username', label: 'Username', desc: 'Ubah @username unik', Icon: AtSign },
-    { href: '/settings/phone', label: 'Nomor Telepon', desc: 'Kontak aktif & WhatsApp', Icon: Phone },
-    { href: '/settings/password', label: 'Password', desc: 'Ubah kata sandi akun', Icon: KeyRound },
-    { href: '/settings/theme', label: 'Tema Tampilan', desc: 'Mode gelap, terang, sistem', Icon: Palette },
-  ]
 
   const filteredTabs = useMemo(() => {
     if (!searchQuery.trim()) return tabs
