@@ -195,6 +195,7 @@ export default function FloatingControls() {
   const ActiveIcon = options.find(([value]) => value === theme)?.[2] ?? ComputerDesktopIcon
   const links = user
     ? [
+        { href: "/", label: "Home" },
         { href: "/dashboard", label: "Dashboard" },
         { href: "/notifications", label: "Notifikasi" },
         { href: "/properties", label: "Cari Properti" },
@@ -202,6 +203,7 @@ export default function FloatingControls() {
         { href: "/settings", label: "Settings" },
       ]
     : [
+        { href: "/", label: "Home" },
         { href: "/properties", label: "Cari Properti" },
         { href: "/login", label: "Login" },
         { href: "/register", label: "Register" },
