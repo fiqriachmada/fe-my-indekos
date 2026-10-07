@@ -293,6 +293,86 @@ export async function POST(request: Request) {
           })
         }
       }
+    } else if (notif.type === 'property_invitation') {
+      // Kasus 3: Undangan bergabung ke properti (ditanggapi oleh user yang diundang)
+      if (notif.to_user_id !== user.id) {
+        return NextResponse.json(
+          { error: 'Hanya pengguna yang diundang yang dapat menanggapi undangan properti ini.' },
+          { status: 403 }
+        )
+      }
+
+      // Ambil nama profil user
+      const { data: userProfile } = await admin
+        .from('profiles')
+        .select('display_name, first_name, last_name')
+        .eq('id', user.id)
+        .maybeSingle()
+      const userName =
+        userProfile?.display_name ||
+        [userProfile?.first_name, userProfile?.last_name].filter(Boolean).join(' ') ||
+        user.email?.split('@')[0] ||
+        'Pengguna'
+      const propertyName = notif.property?.name || 'Properti'
+
+      if (action === 'approved') {
+        // Update status notifikasi
+        await admin
+          .from('notifications')
+          .update({
+            status: 'approved',
+            read: true,
+            responded_at: new Date().toISOString(),
+          })
+          .eq('id', notificationId)
+
+        // Kirim notifikasi balasan ke owner
+        if (notif.from_user_id) {
+          await admin.from('notifications').insert({
+            to_user_id: notif.from_user_id,
+            from_user_id: user.id,
+            property_id: notif.property_id,
+            type: 'property_invitation_accepted',
+            title: 'Undangan Properti Diterima',
+            description: `${userName} telah menerima undangan untuk bergabung ke properti "${propertyName}".`,
+            status: 'approved',
+            read: false,
+          })
+        }
+      } else {
+        // User menolak -> hapus membership dari property_members
+        if (notif.property_id) {
+          await admin
+            .from('property_members')
+            .delete()
+            .eq('property_id', notif.property_id)
+            .eq('user_id', user.id)
+        }
+
+        // Update notifikasi
+        await admin
+          .from('notifications')
+          .update({
+            status: 'rejected',
+            read: true,
+            responded_at: new Date().toISOString(),
+          })
+          .eq('id', notificationId)
+
+        // Kirim notifikasi penolakan ke owner
+        if (notif.from_user_id) {
+          await admin.from('notifications').insert({
+            to_user_id: notif.from_user_id,
+            from_user_id: user.id,
+            property_id: notif.property_id,
+            type: 'property_invitation_rejected',
+            title: 'Undangan Properti Ditolak',
+            description: `${userName} menolak undangan untuk bergabung ke properti "${propertyName}".`,
+            status: 'rejected',
+            read: false,
+          })
+        }
+      }
     } else {
       // Notifikasi umum lainnya
       await admin

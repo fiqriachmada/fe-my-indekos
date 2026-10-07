@@ -232,6 +232,7 @@ export function NotificationsClient({
             const isPending = n.status === 'pending'
             const isAssignment = n.type === 'room_assignment'
             const isApplication = n.type === 'room_application'
+            const isPropertyInvitation = n.type === 'property_invitation'
 
             return (
               <div
@@ -330,7 +331,7 @@ export function NotificationsClient({
                 </div>
 
                 {/* Quick actions for pending */}
-                {isPending && (isAssignment || isApplication) && (
+                {isPending && (isAssignment || isApplication || isPropertyInvitation) && (
                   <div className="mt-3.5 flex items-center gap-2 border-t border-border/50 pt-3">
                     <button
                       type="button"
@@ -342,7 +343,11 @@ export function NotificationsClient({
                       className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-xs transition hover:bg-emerald-700 active:scale-95 disabled:opacity-50"
                     >
                       <CheckIcon className="size-3.5" />
-                      {isAssignment ? 'Terima Kamar' : 'Setujui Sewa'}
+                      {isPropertyInvitation
+                        ? 'Terima Undangan Properti'
+                        : isAssignment
+                        ? 'Terima Kamar'
+                        : 'Setujui Sewa'}
                     </button>
                     <button
                       type="button"
@@ -354,7 +359,11 @@ export function NotificationsClient({
                       className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-1.5 text-xs font-semibold text-rose-600 shadow-xs transition hover:bg-rose-50 dark:hover:bg-rose-950/30 active:scale-95 disabled:opacity-50"
                     >
                       <XMarkIcon className="size-3.5" />
-                      {isAssignment ? 'Tolak Penempatan' : 'Tolak Pengajuan'}
+                      {isPropertyInvitation
+                        ? 'Tolak Undangan'
+                        : isAssignment
+                        ? 'Tolak Penempatan'
+                        : 'Tolak Pengajuan'}
                     </button>
                   </div>
                 )}

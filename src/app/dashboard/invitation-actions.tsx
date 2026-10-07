@@ -38,6 +38,7 @@ export function InvitationActions({ invitation }: { invitation: Invitation }) {
 
   const isAssignment = invitation.type === 'room_assignment'
   const isApplication = invitation.type === 'room_application'
+  const isPropertyInvitation = invitation.type === 'property_invitation'
   const isSkipRoom = isApplication && !invitation.room_id
 
   const availableRooms = (invitation.property?.rooms ?? []).filter(
@@ -47,13 +48,17 @@ export function InvitationActions({ invitation }: { invitation: Invitation }) {
       (r.room_members?.length ?? 0) === 0
   )
 
-  const approveText = isAssignment
+  const approveText = isPropertyInvitation
+    ? 'Terima Undangan Properti'
+    : isAssignment
     ? 'Terima Kamar'
     : isApplication
     ? 'Setujui Sewa'
     : 'Setujui / Terima'
 
-  const rejectText = isAssignment
+  const rejectText = isPropertyInvitation
+    ? 'Tolak Undangan'
+    : isAssignment
     ? 'Tolak Penempatan'
     : isApplication
     ? 'Tolak Pengajuan'
