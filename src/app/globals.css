@@ -162,35 +162,68 @@
 .brutalism-dark {
   color-scheme: dark;
   --background: #09090b;
-  --foreground: #fafafa;
+  --foreground: #ffffff;
   --card: #18181b;
-  --card-foreground: #fafafa;
+  --card-foreground: #ffffff;
   --popover: #18181b;
-  --popover-foreground: #fafafa;
-  --primary: #84cc16;
+  --popover-foreground: #ffffff;
+  --primary: #a3e635;
   --primary-foreground: #09090b;
   --secondary: #27272a;
-  --secondary-foreground: #fafafa;
+  --secondary-foreground: #ffffff;
   --muted: #27272a;
-  --muted-foreground: #a1a1aa;
-  --accent: #f59e0b;
+  --muted-foreground: #d4d4d8;
+  --accent: #fbbf24;
   --accent-foreground: #09090b;
-  --destructive: #ef4444;
-  --border: #3f3f46;
+  --destructive: #f87171;
+  --border: #52525b;
   --input: #18181b;
-  --ring: #84cc16;
+  --ring: #a3e635;
   --radius: 8px;
 }
 
 .brutalism-dark input {
   background-color: #18181b !important;
-  color: #fafafa !important;
-  border: 2px solid #3f3f46 !important;
+  color: #ffffff !important;
+  border: 2px solid #52525b !important;
   box-shadow: 2px 2px 0px #27272a !important;
 }
 
 .brutalism-dark button:not(.fab-btn),
 .brutalism-dark .card {
-  border: 2px solid #3f3f46 !important;
-  box-shadow: 3px 3px 0px #84cc16 !important;
+  border: 2px solid #52525b !important;
+  box-shadow: 3px 3px 0px #a3e635 !important;
 }
+
+/* Floating controls styling for Neo-Brutalism Dark */
+.brutalism-dark .fixed.bottom-5 .rounded-full.border {
+  background-color: #18181b !important;
+  border: 2px solid #a3e635 !important;
+  box-shadow: 3px 3px 0px #a3e635 !important;
+}
+
+.brutalism-dark .fixed.bottom-5 button {
+  color: #ffffff !important;
+}
+
+.brutalism-dark .fixed.bottom-5 button:hover {
+  background-color: #27272a !important;
+  color: #a3e635 !important;
+}
+
+.brutalism-dark .fixed.bottom-5 .rounded-2xl.border {
+  background-color: #18181b !important;
+  border: 2px solid #a3e635 !important;
+  box-shadow: 4px 4px 0px #a3e635 !important;
+  color: #ffffff !important;
+}
+
+.brutalism-dark .fixed.bottom-5 .rounded-2xl.border button {
+  color: #f4f4f5 !important;
+}
+
+.brutalism-dark .fixed.bottom-5 .rounded-2xl.border button:hover {
+  background-color: #27272a !important;
+  color: #a3e635 !important;
+}
+
