@@ -55,7 +55,8 @@ export default function PhoneSettingsPage() {
 
   const [selectedCountry, setSelectedCountry] = useState(COUNTRIES[0]);
   const [phone, setPhone] = useState("");
-  const [label, setLabel] = useState("");
+  const [labelCategory, setLabelCategory] = useState<'Pribadi' | 'Rumah' | 'Kantor' | 'Other'>('Pribadi');
+  const [customLabel, setCustomLabel] = useState("");
   const [editing, setEditing] = useState<Phone | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -65,6 +66,8 @@ export default function PhoneSettingsPage() {
     label: string;
     isPrimary: boolean;
   } | null>(null);
+
+  const effectiveLabel = labelCategory === 'Other' ? customLabel.trim() : labelCategory;
 
   const handlePhoneInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawVal = e.target.value;
@@ -79,6 +82,52 @@ export default function PhoneSettingsPage() {
       setPhone(cleanLocalPhoneNumber(phone, found.dialCode));
     }
   };
+
+  async function directSavePhone(fullNumber: string) {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast.error("Sesi tidak ditemukan");
+      setMessage("Sesi verifikasi tidak ditemukan.");
+      setBusy(false);
+      return;
+    }
+
+    const values = {
+      phone_number: fullNumber,
+      label: effectiveLabel || null,
+      is_primary: !phones?.length || editing?.is_primary === true,
+      user_id: user.id,
+      is_verified: true,
+      verified_at: new Date().toISOString(),
+    };
+
+    const result = editing
+      ? await supabase
+          .from("user_phone_numbers")
+          .update(values)
+          .eq("id", editing.id)
+          .eq("user_id", user.id)
+      : await supabase.from("user_phone_numbers").insert(values);
+
+    setBusy(false);
+    if (result.error) {
+      const errMsg = result.error.code === "23505" ? "Nomor tersebut sudah tersimpan." : "Nomor belum dapat disimpan.";
+      toast.error("Gagal menyimpan", { description: errMsg });
+      setMessage(errMsg);
+      return;
+    }
+    setPhone("");
+    setLabelCategory("Pribadi");
+    setCustomLabel("");
+    setOtp("");
+    setEditing(null);
+    setPendingVerification(null);
+    const successMsg = editing ? "Nomor telepon berhasil diperbarui." : "Nomor telepon berhasil ditambahkan dan disimpan.";
+    toast.success("Berhasil!", { description: successMsg });
+    setMessage(successMsg);
+    await mutate();
+  }
 
   async function sendOtp(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -96,17 +145,25 @@ export default function PhoneSettingsPage() {
     const { error: updateError } = await supabase.auth.updateUser({
       phone: fullNumber,
     });
-    setBusy(false);
     if (updateError) {
+      if (
+        updateError.message.includes("provider") ||
+        updateError.message.includes("SMS") ||
+        (updateError as { status?: number }).status === 400
+      ) {
+        toast.info("SMS Provider belum aktif di Supabase, nomor langsung disimpan.");
+        await directSavePhone(fullNumber);
+        return;
+      }
+      setBusy(false);
       toast.error("Gagal mengirim OTP", { description: updateError.message });
-      setMessage(
-        "Kode OTP belum dapat dikirim: " + updateError.message,
-      );
+      setMessage("Kode OTP belum dapat dikirim: " + updateError.message);
       return;
     }
+    setBusy(false);
     setPendingVerification({
       phone: fullNumber,
-      label: label.trim(),
+      label: effectiveLabel,
       isPrimary: !phones?.length || editing?.is_primary === true,
     });
     toast.success("OTP Terkirim", { description: `Kode OTP sudah dikirim ke ${fullNumber}` });
@@ -160,7 +217,8 @@ export default function PhoneSettingsPage() {
       return;
     }
     setPhone("");
-    setLabel("");
+    setLabelCategory("Pribadi");
+    setCustomLabel("");
     setOtp("");
     setEditing(null);
     setPendingVerification(null);
@@ -226,7 +284,16 @@ export default function PhoneSettingsPage() {
     );
     setEditing(item);
     setPhone(localNum);
-    setLabel(item.label ?? "");
+    if (["Pribadi", "Rumah", "Kantor"].includes(item.label ?? "")) {
+      setLabelCategory(item.label as "Pribadi" | "Rumah" | "Kantor");
+      setCustomLabel("");
+    } else if (item.label) {
+      setLabelCategory("Other");
+      setCustomLabel(item.label);
+    } else {
+      setLabelCategory("Pribadi");
+      setCustomLabel("");
+    }
     setPendingVerification(null);
   };
 
@@ -294,19 +361,38 @@ export default function PhoneSettingsPage() {
             </div>
 
             <div>
-              <label htmlFor="label" className="mb-1 block text-sm font-medium">
+              <label className="mb-2 block text-sm font-medium">
                 Label{" "}
                 <span className="font-normal text-muted-foreground">
-                  (opsional)
+                  (pilih jenis kontak)
                 </span>
               </label>
-              <input
-                id="label"
-                value={label}
-                onChange={(e) => setLabel(e.target.value)}
-                className={inputClass}
-                placeholder="Pribadi, kantor, WhatsApp"
-              />
+              <div className="flex flex-wrap gap-2">
+                {(['Pribadi', 'Rumah', 'Kantor', 'Other'] as const).map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setLabelCategory(cat)}
+                    className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
+                      labelCategory === cat
+                        ? 'bg-indigo-600 text-white shadow-xs'
+                        : 'border border-border bg-muted/50 text-foreground hover:bg-muted'
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+
+              {labelCategory === 'Other' && (
+                <input
+                  id="label"
+                  value={customLabel}
+                  onChange={(e) => setCustomLabel(e.target.value)}
+                  className={`mt-2.5 ${inputClass}`}
+                  placeholder="Ketik label khusus (misal: WhatsApp, Kost)..."
+                />
+              )}
             </div>
           </>
         ) : (
@@ -345,7 +431,8 @@ export default function PhoneSettingsPage() {
                 setEditing(null);
                 setPendingVerification(null);
                 setPhone("");
-                setLabel("");
+                setLabelCategory("Pribadi");
+                setCustomLabel("");
                 setOtp("");
               }}
               className="rounded-lg border border-border px-4 py-2.5 transition hover:bg-accent"

@@ -13,7 +13,7 @@ import {
   TrashIcon,
 } from "@heroicons/react/24/outline"
 
-type Theme = "light" | "dark" | "system" | "brutalism"
+type Theme = "light" | "dark" | "system" | "brutalism" | "brutalism-dark"
 type Menu = "theme" | "navigation" | "notifications" | null
 
 type FloatingNotification = {
