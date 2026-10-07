@@ -95,8 +95,6 @@ export default async function ProfilePage() {
             initialFirstName={firstName}
             initialLastName={lastName}
             initialDisplayName={displayName}
-            initialUsername={username}
-            initialUsernameLastChanged={usernameLastChanged}
             roles={roles}
           />
         </div>

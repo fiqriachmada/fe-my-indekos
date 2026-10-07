@@ -10,8 +10,6 @@ interface ProfileFormProps {
   initialFirstName: string
   initialLastName: string
   initialDisplayName: string
-  initialUsername: string
-  initialUsernameLastChanged: string | null
   roles: string[]
 }
 
@@ -21,8 +19,6 @@ export default function ProfileForm({
   initialFirstName,
   initialLastName,
   initialDisplayName,
-  initialUsername,
-  initialUsernameLastChanged,
   roles,
 }: ProfileFormProps) {
   const router = useRouter()
