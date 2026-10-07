@@ -65,7 +65,7 @@ export default function UsernameSettingsPage() {
       return
     }
 
-    const cleanUsername = username.trim().toLowerCase().replace(/[^a-z0-9_.]/g, '')
+    const cleanUsername = username.trim().toLowerCase().replace(/[^a-z0-9_]/g, '')
     if (!cleanUsername) {
       toast.error('Username tidak boleh kosong')
       return
@@ -75,8 +75,9 @@ export default function UsernameSettingsPage() {
     const supabase = createClient()
 
     try {
+      const formattedUsername = '@' + cleanUsername.replace(/^@+/, '')
       const { data, error } = await supabase.rpc('change_username', {
-        new_username: cleanUsername,
+        new_username: formattedUsername,
       })
 
       if (error) throw error
