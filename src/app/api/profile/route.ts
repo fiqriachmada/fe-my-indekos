@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function GET() {
   try {
@@ -16,40 +17,63 @@ export async function GET() {
       )
     }
 
-    const metadata = user.user_metadata ?? {}
+    const admin = createAdminClient()
 
     const [profileRes, ownedRes, memberRes, roomRes] = await Promise.all([
-      supabase
+      admin
         .from('profiles')
         .select('id, first_name, last_name, display_name, username, avatar_url, phone, account_status')
         .eq('id', user.id)
         .maybeSingle(),
-      supabase.from('properties').select('id').eq('owner_id', user.id).limit(1),
-      supabase
+      admin.from('properties').select('id').eq('owner_id', user.id).limit(1),
+      admin
         .from('property_members')
         .select('role:roles(name)')
         .eq('user_id', user.id)
         .returns<{ role: { name: string } | null }[]>(),
-      supabase.from('room_members').select('room_id').eq('user_id', user.id).limit(1),
+      admin.from('room_members').select('room_id').eq('user_id', user.id).limit(1),
     ])
 
     const profile = profileRes.data
+    const metadata = user.user_metadata ?? {}
 
-    const firstName =
-      (typeof profile?.first_name === 'string' && profile.first_name) ||
-      (typeof metadata.first_name === 'string' && metadata.first_name) ||
-      ''
+    let firstName = profile?.first_name || (metadata.first_name as string) || ''
+    let lastName = profile?.last_name || (metadata.last_name as string) || ''
 
-    const lastName =
-      (typeof profile?.last_name === 'string' && profile.last_name) ||
-      (typeof metadata.last_name === 'string' && metadata.last_name) ||
-      ''
+    if (!firstName && !lastName) {
+      const full = (metadata.full_name as string) || (metadata.name as string) || ''
+      if (full) {
+        const parts = full.trim().split(/\s+/)
+        firstName = parts[0] || ''
+        lastName = parts.slice(1).join(' ') || ''
+      }
+    }
+
+    const email = user.email ?? ''
+    const fallbackNameFromEmail = email ? email.split('@')[0] : 'User'
 
     const displayName =
-      (typeof profile?.display_name === 'string' && profile.display_name) ||
-      (typeof metadata.display_name === 'string' && metadata.display_name) ||
+      profile?.display_name ||
+      (metadata.display_name as string) ||
       [firstName, lastName].filter(Boolean).join(' ') ||
-      ''
+      fallbackNameFromEmail
+
+    const username =
+      profile?.username ||
+      (metadata.username as string) ||
+      fallbackNameFromEmail
+
+    const avatarUrl =
+      profile?.avatar_url ||
+      (metadata.avatar_url as string) ||
+      (metadata.picture as string) ||
+      null
+
+    const phone =
+      profile?.phone ||
+      (metadata.phone as string) ||
+      user.phone ||
+      null
 
     const rolesSet = new Set<string>()
 
@@ -80,19 +104,36 @@ export async function GET() {
 
     const mergedProfile = {
       id: user.id,
-      first_name: firstName,
-      last_name: lastName,
+      first_name: firstName || null,
+      last_name: lastName || null,
       display_name: displayName,
-      username: profile?.username || (metadata.username as string) || null,
-      avatar_url: profile?.avatar_url || (metadata.avatar_url as string) || null,
-      phone: profile?.phone || (metadata.phone as string) || null,
+      username: username ? username.replace(/^@+/, '') : null,
+      avatar_url: avatarUrl,
+      phone,
       account_status: profile?.account_status ?? 'active',
       roles,
     }
 
+    if (!profile) {
+      void admin.from('profiles').upsert(
+        {
+          id: user.id,
+          first_name: firstName || null,
+          last_name: lastName || null,
+          display_name: displayName,
+          username: username || null,
+          avatar_url: avatarUrl,
+          phone,
+          account_status: 'active',
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'id' }
+      )
+    }
+
     return NextResponse.json({
       profile: mergedProfile,
-      email: user.email ?? '',
+      email,
       roles,
     })
   } catch (err: unknown) {
@@ -125,8 +166,10 @@ export async function PATCH(request: Request) {
     if (display_name !== undefined) updates.display_name = display_name
     if (avatar_url !== undefined) updates.avatar_url = avatar_url
 
+    const admin = createAdminClient()
+
     if (Object.keys(updates).length > 0) {
-      const { error: dbError } = await supabase.from('profiles').upsert(
+      const { error: dbError } = await admin.from('profiles').upsert(
         {
           id: user.id,
           ...updates,
