@@ -1,6 +1,6 @@
 # Supabase Database Schema
 
-Generated at: 2026-10-07T13:56:00.519Z
+Generated at: 2026-10-07T14:10:48.140Z
 Host: https://ogvjmrqfqdesjkbjhcmd.supabase.co
 
 ## RPC / Functions
@@ -172,6 +172,7 @@ Note:
 This is a Foreign Key to `status_profiles.status_id`.<fk table='status_profiles' column='status_id'/> |
 | phone | string | text |  |
 | account_status | string | text |  |
+| updated_at | string | timestamp with time zone |  |
 
 ### status_member_rooms
 
