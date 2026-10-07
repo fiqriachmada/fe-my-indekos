@@ -34,32 +34,8 @@ export default function ProfileForm({
   const [profileStatus, setProfileStatus] = useState<string | null>(null)
   const [profileError, setProfileError] = useState<string | null>(null)
 
-  // Username state (strip leading @ so the field contains only the username)
-  const initialCleanUsername = (initialUsername || '').replace(/^@/, '')
-  const [username, setUsername] = useState(initialCleanUsername)
-  const [usernameLastChanged, setUsernameLastChanged] = useState<string | null>(
-    initialUsernameLastChanged
-  )
-  const [usernameLoading, setUsernameLoading] = useState(false)
-  const [usernameStatus, setUsernameStatus] = useState<string | null>(null)
-  const [usernameError, setUsernameError] = useState<string | null>(null)
-
   const generatedDisplayName = [firstName.trim(), lastName.trim()].filter(Boolean).join(' ')
   const previewDisplayName = generatedDisplayName || initialDisplayName || '-'
-
-  // 24-hour lock calculation
-  const usernameLockedUntil = usernameLastChanged
-    ? new Date(new Date(usernameLastChanged).getTime() + 24 * 60 * 60 * 1000)
-    : null
-  const [currentTime] = useState(() => Date.now())
-  const usernameChangeAllowed =
-    !usernameLockedUntil || usernameLockedUntil.getTime() <= currentTime
-  const usernameHint = usernameChangeAllowed
-    ? 'Username bersifat unik dan hanya bisa diganti sekali setiap 24 jam.'
-    : `Username terkunci. Bisa diganti lagi pada ${usernameLockedUntil?.toLocaleString('id-ID', {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-      })}.`
 
   async function handleProfileSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -110,75 +86,6 @@ export default function ProfileForm({
     }
 
     setProfileStatus('Profil berhasil diperbarui dan tersimpan di database.')
-    router.refresh()
-  }
-
-  async function handleUsernameChange() {
-    setUsernameStatus(null)
-    setUsernameError(null)
-
-    const cleaned = username.trim().replace(/^@/, '')
-    if (!cleaned) {
-      setUsernameError('Silakan masukkan username terlebih dahulu.')
-      return
-    }
-
-    if (cleaned.toLowerCase() === initialCleanUsername.toLowerCase()) {
-      setUsernameError('Username ini sudah menjadi username Anda saat ini.')
-      return
-    }
-
-    if (cleaned.length < 3) {
-      setUsernameError('Username minimal 3 karakter.')
-      return
-    }
-
-    const normalized = `@${cleaned.toLowerCase()}`
-
-    setUsernameLoading(true)
-    const supabase = createClient()
-
-    // Panggil RPC change_username bawaan Supabase
-    const { data, error } = await supabase.rpc('change_username', {
-      new_username: normalized,
-    })
-
-    setUsernameLoading(false)
-
-    if (error) {
-      const msg = error.message.toLowerCase()
-      if (
-        msg.includes('24') ||
-        msg.includes('hour') ||
-        msg.includes('jam') ||
-        msg.includes('rate')
-      ) {
-        setUsernameError('Username hanya bisa diganti sekali setiap 24 jam.')
-      } else if (
-        msg.includes('already') ||
-        msg.includes('taken') ||
-        msg.includes('unique') ||
-        msg.includes('digunakan') ||
-        msg.includes('exist')
-      ) {
-        setUsernameError('Username sudah diambil orang lain. Silakan coba username yang lain.')
-      } else {
-        setUsernameError(error.message)
-      }
-      return
-    }
-
-    const res = data as { username: string; last_changed_at: string } | null
-    if (res?.username) {
-      setUsername(res.username.replace(/^@/, ''))
-    }
-    if (res?.last_changed_at) {
-      setUsernameLastChanged(res.last_changed_at)
-    } else {
-      setUsernameLastChanged(new Date().toISOString())
-    }
-
-    setUsernameStatus('Username berhasil diubah!')
     router.refresh()
   }
 
@@ -277,56 +184,6 @@ export default function ProfileForm({
           </div>
         )}
       </form>
-
-      {/* Ubah Username Section */}
-      <div className="border-t border-border pt-6">
-        <label htmlFor="username" className="block text-sm font-medium">
-          Username
-        </label>
-        <div className="mt-2 flex gap-2">
-          <div className="flex flex-1 overflow-hidden rounded-xl border border-input bg-background transition-colors focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-200">
-            <span className="flex select-none items-center border-r border-input bg-muted/60 px-3.5 text-sm font-semibold text-muted-foreground">
-              @
-            </span>
-            <input
-              id="username"
-              type="text"
-              value={username}
-              disabled={!usernameChangeAllowed || usernameLoading}
-              onChange={(e) => setUsername(e.target.value.replace(/^@/, ''))}
-              placeholder="username"
-              className="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-foreground outline-none disabled:cursor-not-allowed disabled:bg-muted/30 disabled:text-muted-foreground"
-            />
-          </div>
-          <button
-            type="button"
-            disabled={!usernameChangeAllowed || usernameLoading || !username.trim()}
-            onClick={handleUsernameChange}
-            className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            {usernameLoading ? 'Menyimpan...' : 'Ubah username'}
-          </button>
-        </div>
-        <p className="mt-1.5 text-xs text-muted-foreground">{usernameHint}</p>
-
-        {usernameError && (
-          <div
-            role="alert"
-            className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-200"
-          >
-            {usernameError}
-          </div>
-        )}
-
-        {usernameStatus && (
-          <div
-            role="status"
-            className="mt-3 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-200"
-          >
-            {usernameStatus}
-          </div>
-        )}
-      </div>
     </div>
   )
 }
