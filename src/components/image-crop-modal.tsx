@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
-import { UploadCloud, ZoomIn, ZoomOut, RotateCw, Check, X, Move } from 'lucide-react'
+import { useState, useRef, useCallback } from 'react'
+import { ZoomIn, ZoomOut, Check, X, Move } from 'lucide-react'
 
 interface ImageCropModalProps {
   isOpen: boolean
@@ -11,8 +11,12 @@ interface ImageCropModalProps {
   accentColor?: string
 }
 
-export function ImageCropModal({
-  isOpen,
+export function ImageCropModal(props: ImageCropModalProps) {
+  if (!props.isOpen || !props.imageSrc) return null
+  return <ImageCropContent key={props.imageSrc} {...props} />
+}
+
+function ImageCropContent({
   imageSrc,
   onClose,
   onCropComplete,
@@ -23,13 +27,6 @@ export function ImageCropModal({
   const [isDragging, setIsDragging] = useState(false)
   const dragStart = useRef({ x: 0, y: 0 })
   const imageRef = useRef<HTMLImageElement>(null)
-
-  useEffect(() => {
-    if (isOpen) {
-      setScale(1)
-      setPosition({ x: 0, y: 0 })
-    }
-  }, [isOpen, imageSrc])
 
   const handlePointerDown = (e: React.PointerEvent) => {
     setIsDragging(true)
@@ -99,8 +96,6 @@ export function ImageCropModal({
     )
   }, [position, scale, onCropComplete])
 
-  if (!isOpen || !imageSrc) return null
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-xs animate-in fade-in duration-200">
       <div className="flex w-full max-w-md flex-col rounded-3xl border border-border bg-card p-6 shadow-2xl text-card-foreground">
@@ -129,7 +124,7 @@ export function ImageCropModal({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               ref={imageRef}
-              src={imageSrc}
+              src={imageSrc ?? undefined}
               alt="Crop target"
               draggable={false}
               style={{

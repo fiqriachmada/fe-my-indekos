@@ -11,16 +11,11 @@ export default async function ProfilePage() {
 
   const metadata = user.user_metadata ?? {}
 
-  const [profileRes, usernameRes, ownedRes, memberRes, roomRes] = await Promise.all([
+  const [profileRes, ownedRes, memberRes, roomRes] = await Promise.all([
     supabase
       .from("profiles")
-      .select("first_name, last_name, display_name, username")
+      .select("first_name, last_name, display_name")
       .eq("id", user.id)
-      .maybeSingle(),
-    supabase
-      .from("usernames")
-      .select("username, last_changed_at")
-      .eq("user_id", user.id)
       .maybeSingle(),
     supabase.from("properties").select("id").eq("owner_id", user.id).limit(1),
     supabase
@@ -47,14 +42,6 @@ export default async function ProfilePage() {
     (typeof profile?.display_name === "string" && profile.display_name) ||
     (typeof metadata.display_name === "string" && metadata.display_name) ||
     [firstName, lastName].filter(Boolean).join(" ")
-
-  const username =
-    usernameRes.data?.username ||
-    (typeof profile?.username === "string" && profile.username) ||
-    (typeof metadata.username === "string" && metadata.username) ||
-    ""
-
-  const usernameLastChanged = usernameRes.data?.last_changed_at ?? null
 
   const rolesSet = new Set<string>()
 
