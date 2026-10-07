@@ -266,6 +266,23 @@ export async function POST(request: Request) {
             .delete()
             .eq('room_id', notif.room_id)
             .eq('user_id', user.id)
+
+          // Cek apakah user masih menempati kamar lain di properti ini
+          if (notif.property_id) {
+            const { data: otherOccupied } = await admin
+              .from('room_members')
+              .select('room_id, room:rooms!inner(property_id)')
+              .eq('user_id', user.id)
+              .eq('room.property_id', notif.property_id)
+
+            if (!otherOccupied || otherOccupied.length === 0) {
+              await admin
+                .from('property_members')
+                .delete()
+                .eq('property_id', notif.property_id)
+                .eq('user_id', user.id)
+            }
+          }
         }
 
         await admin

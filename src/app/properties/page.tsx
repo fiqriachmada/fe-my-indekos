@@ -16,8 +16,8 @@ export default async function PropertiesPage() {
 
   const admin = createAdminClient()
 
-  // Ambil data properti dan relasi kamar menggunakan admin client agar rooms tidak tersembunyi oleh RLS
-  const { data: properties, error } = await admin
+  // Ambil data properti kos yang berstatus aktif (status_id = 1 atau is_active = true) dan relasi kamar aktif
+  const { data: rawProperties, error } = await admin
     .from("properties")
     .select(`
       id,
@@ -28,20 +28,33 @@ export default async function PropertiesPage() {
       land_area,
       owner_id,
       created_at,
+      status_id,
       is_active,
       rooms (
         id,
         name,
+        status_id,
         is_active,
         area,
         bathroom_mode,
         occupant_member_id,
         room_members (
-          user_id
+          user_id,
+          status_id
         )
       )
     `)
+    .or("status_id.eq.1,and(status_id.is.null,is_active.eq.true)")
+    .ilike("property_type", "%kos%")
     .order("created_at", { ascending: false })
+
+  // Pastikan hanya kamar yang berstatus aktif (status_id = 1 atau is_active = true) yang ditampilkan kepada publik/calon penyewa
+  const properties = (rawProperties ?? []).map((property) => ({
+    ...property,
+    rooms: (property.rooms ?? []).filter(
+      (room) => (room.status_id ? room.status_id === 1 : room.is_active !== false)
+    ),
+  }))
 
   return (
     <main className="min-h-screen bg-background px-4 py-12 pb-28 text-foreground transition-colors sm:px-6 lg:px-8">

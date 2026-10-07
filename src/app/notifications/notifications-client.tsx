@@ -110,21 +110,31 @@ export function NotificationsClient({
   async function handleResponse(n: PageNotification, action: 'approved' | 'rejected') {
     setLoadingActionId(n.id)
     try {
-      const { error: rpcError } = await supabase.rpc('respond_to_room_application', {
-        p_notification_id: n.id,
-        p_action: action,
+      const res = await fetch('/api/rooms/respond', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          notificationId: n.id,
+          action,
+        }),
       })
 
-      if (rpcError) {
+      if (!res.ok) {
         // Fallback update
-        await supabase
-          .from('notifications')
-          .update({
-            status: action,
-            read: true,
-            responded_at: new Date().toISOString(),
-          })
-          .eq('id', n.id)
+        const { error: rpcError } = await supabase.rpc('respond_to_room_application', {
+          p_notification_id: n.id,
+          p_action: action,
+        })
+        if (rpcError) {
+          await supabase
+            .from('notifications')
+            .update({
+              status: action,
+              read: true,
+              responded_at: new Date().toISOString(),
+            })
+            .eq('id', n.id)
+        }
       }
 
       setNotifications((prev) =>

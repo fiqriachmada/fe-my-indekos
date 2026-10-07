@@ -23,10 +23,11 @@ type RoomItem = {
   id: string
   name: string | null
   is_active: boolean | null
+  status_id?: number | null
   area?: number | null
   bathroom_mode?: string | null
   occupant_member_id?: string | null
-  room_members: { user_id: string }[] | null
+  room_members: { user_id: string; status_id?: number | null }[] | null
 }
 
 type PropertyItem = {
@@ -38,6 +39,7 @@ type PropertyItem = {
   land_area: number | null
   owner_id: string | null
   created_at: string
+  status_id?: number | null
   is_active: boolean | null
   rooms: RoomItem[] | null
 }

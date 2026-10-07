@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import useSWR from 'swr'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
 
 type Phone = { id: string; phone_number: string; label: string | null; is_primary: boolean }
@@ -17,7 +17,16 @@ async function loadPhones() {
 }
 
 export default function PhoneSettingsPage() {
-  const { data: phones, error, isLoading, mutate } = useSWR('user-phone-numbers', loadPhones)
+  const queryClient = useQueryClient()
+  const { data: phones, error, isLoading } = useQuery({
+    queryKey: ['user-phone-numbers'],
+    queryFn: loadPhones,
+  })
+
+  async function mutate() {
+    await queryClient.invalidateQueries({ queryKey: ['user-phone-numbers'] })
+  }
+
   const [phone, setPhone] = useState('')
   const [label, setLabel] = useState('')
   const [editing, setEditing] = useState<Phone | null>(null)
@@ -62,6 +71,6 @@ export default function PhoneSettingsPage() {
     </form>
     {message && <p role="status" className="rounded-lg bg-muted p-3 text-sm text-muted-foreground">{message}</p>}
     {error && <p role="alert" className="rounded-lg bg-red-950/20 p-3 text-sm text-red-500">Nomor telepon belum dapat dimuat.</p>}
-    <div className="space-y-3">{isLoading ? <p className="text-sm text-muted-foreground">Memuat nomor...</p> : phones?.map((item) => <div key={item.id} className="flex items-center justify-between gap-4 rounded-xl border border-border bg-card p-4"><div><p className="font-semibold">{item.phone_number} {item.is_primary && <span className="ml-2 rounded-full bg-indigo-500/15 px-2 py-1 text-xs text-indigo-500">Utama</span>}</p>{item.label && <p className="text-sm text-muted-foreground">{item.label}</p>}</div><div className="flex shrink-0 gap-2"><button type="button" onClick={() => { setEditing(item); setPhone(item.phone_number); setLabel(item.label ?? '') }} className="text-sm text-indigo-500">Edit</button>{!item.is_primary && <button type="button" onClick={() => makePrimary(item)} className="text-sm text-muted-foreground">Jadikan utama</button>}<button type="button" onClick={() => deletePhone(item.id)} className="text-sm text-red-500">Hapus</button></div></div>)}</div>
+    <div className="space-y-3">{isLoading ? <p className="text-sm text-muted-foreground">Memuat nomor...</p> : phones?.map((item: Phone) => <div key={item.id} className="flex items-center justify-between gap-4 rounded-xl border border-border bg-card p-4"><div><p className="font-semibold">{item.phone_number} {item.is_primary && <span className="ml-2 rounded-full bg-indigo-500/15 px-2 py-1 text-xs text-indigo-500">Utama</span>}</p>{item.label && <p className="text-sm text-muted-foreground">{item.label}</p>}</div><div className="flex shrink-0 gap-2"><button type="button" onClick={() => { setEditing(item); setPhone(item.phone_number); setLabel(item.label ?? '') }} className="text-sm text-indigo-500">Edit</button>{!item.is_primary && <button type="button" onClick={() => makePrimary(item)} className="text-sm text-muted-foreground">Jadikan utama</button>}<button type="button" onClick={() => deletePhone(item.id)} className="text-sm text-red-500">Hapus</button></div></div>)}</div>
   </div>
 }
