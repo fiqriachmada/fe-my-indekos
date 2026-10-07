@@ -326,18 +326,27 @@ export function NotificationsClient({
                     </div>
                   </div>
 
-                  {!n.read && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        markSingleAsRead(n.id)
-                      }}
-                      className="text-[11px] text-muted-foreground hover:text-foreground shrink-0"
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Link
+                      href={`/notifications/${n.id}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-[11px] font-semibold text-indigo-600 hover:underline dark:text-indigo-400"
                     >
-                      Tandai dibaca
-                    </button>
-                  )}
+                      Lihat detail →
+                    </Link>
+                    {!n.read && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          markSingleAsRead(n.id)
+                        }}
+                        className="text-[11px] text-muted-foreground hover:text-foreground"
+                      >
+                        Tandai dibaca
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Quick actions for pending */}

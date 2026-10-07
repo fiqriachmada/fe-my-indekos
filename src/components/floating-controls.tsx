@@ -315,9 +315,17 @@ export default function FloatingControls() {
                             </p>
                           )}
                           <div className="mt-2 flex items-center justify-between border-t border-border/30 pt-1 text-[11px]">
-                            <span className="font-semibold text-indigo-600 hover:underline dark:text-indigo-400">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setMenu(null)
+                                router.push(`/notifications/${n.id}`)
+                              }}
+                              className="font-semibold text-indigo-600 hover:underline dark:text-indigo-400"
+                            >
                               Lihat detail →
-                            </span>
+                            </button>
                             <button
                               type="button"
                               onClick={(e) => void deleteSingleNotification(e, n.id)}
