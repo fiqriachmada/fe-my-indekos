@@ -6,7 +6,8 @@
     "dev": "next dev -p 21020",
     "build": "next build",
     "start": "next start -p 21020",
-    "lint": "tsc --noEmit && eslint ."
+    "lint": "tsc --noEmit && eslint .",
+    "format": "npx prettier --write ."
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
