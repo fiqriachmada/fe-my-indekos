@@ -1,0 +1,35 @@
+<svg width="240" height="60" viewBox="0 0 240 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="indekosGradient" x1="6" y1="6" x2="52" y2="52" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#4F46E5" />
+      <stop offset="1" stop-color="#7C3AED" />
+    </linearGradient>
+    <linearGradient id="roofGradient" x1="16" y1="12" x2="42" y2="34" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" />
+      <stop offset="1" stop-color="#E0E7FF" />
+    </linearGradient>
+    <filter id="shadow" x="0" y="0" width="60" height="60" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#4F46E5" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+
+  <!-- Modern Icon Badge -->
+  <g filter="url(#shadow)">
+    <rect x="6" y="6" width="46" height="46" rx="14" fill="url(#indekosGradient)" />
+    <!-- Roof & Home Geometric Symbol -->
+    <path d="M29 16L17 26.5V40C17 41.1 17.9 42 19 42H39C40.1 42 41 41.1 41 40V26.5L29 16Z" fill="url(#roofGradient)" fill-opacity="0.2" />
+    <path d="M29 16L15 28L17.5 30.2L29 20.3L40.5 30.2L43 28L29 16Z" fill="#FFFFFF" />
+    <!-- Doorway Keyhole Accent -->
+    <rect x="25.5" y="27.5" width="7" height="13.5" rx="3.5" fill="#FFFFFF" />
+    <circle cx="29" cy="32" r="1.8" fill="#4F46E5" />
+    <path d="M28.3 33.2H29.7V37.2H28.3V33.2Z" fill="#4F46E5" />
+  </g>
+
+  <!-- Brand Typography -->
+  <text x="64" y="32" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="21" font-weight="800" fill="currentColor" letter-spacing="-0.02em">
+    My<tspan fill="#4F46E5">Indekos</tspan>
+  </text>
+  <text x="64.5" y="45" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="10" font-weight="600" fill="#6B7280" letter-spacing="0.16em">
+    SISTEM KOS DIGITAL
+  </text>
+</svg>

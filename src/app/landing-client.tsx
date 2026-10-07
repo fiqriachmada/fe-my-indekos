@@ -18,8 +18,8 @@ import type { IndekosLandingStats } from "@/lib/landing-stats"
 
 const navigation = [
   { name: "Cari Kos", href: "/properties" },
-  { name: "Fitur", href: "#features" },
-  { name: "Keunggulan", href: "#benefits" },
+  { name: "Fitur", href: "/fitur" },
+  { name: "Tentang", href: "/tentang" },
 ]
 
 function useAuthPath() {
@@ -84,12 +84,7 @@ export default function LandingClient({ stats }: { stats: IndekosLandingStats })
                   <div className="flex flex-shrink-0 flex-grow items-center lg:flex-grow-0">
                     <div className="flex w-full items-center justify-between md:w-auto">
                       <Link href="/" className="flex items-center gap-2">
-                        <div className="flex size-9 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-md">
-                          <HomeModernIcon className="size-5" />
-                        </div>
-                        <span className="text-xl font-bold tracking-tight text-foreground">
-                          My Indekos
-                        </span>
+                        <img src="/indekos-logo.svg" alt="My Indekos" className="h-10 w-auto" />
                       </Link>
                       <div className="-mr-2 flex items-center md:hidden">
                         <Popover.Button className="inline-flex items-center justify-center rounded-md bg-background p-2 text-muted-foreground hover:bg-muted hover:text-foreground focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500">
