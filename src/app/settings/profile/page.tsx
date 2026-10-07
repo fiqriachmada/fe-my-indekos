@@ -1,96 +1,115 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { createClient } from '@/lib/supabase/client'
+
+type ProfileData = {
+  profile: {
+    id: string
+    first_name: string | null
+    last_name: string | null
+    display_name: string | null
+    username: string | null
+    avatar_url: string | null
+    phone: string | null
+    account_status: string
+    roles?: string[]
+  }
+  email: string
+}
+
+async function fetchProfile(): Promise<ProfileData> {
+  const res = await fetch('/api/profile', {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json' },
+  })
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.error || 'Gagal memuat profil.')
+  }
+
+  return await res.json()
+}
+
+async function updateProfileApi(payload: {
+  first_name: string
+  last_name: string
+  display_name: string
+}) {
+  const res = await fetch('/api/profile', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.error || 'Gagal memperbarui profil.')
+  }
+
+  return await res.json()
+}
 
 export default function ProfileSettingsPage() {
-  const router = useRouter()
-  const [email, setEmail] = useState('')
+  const queryClient = useQueryClient()
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['profile'],
+    queryFn: fetchProfile,
+  })
+
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
-  const [userId, setUserId] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    async function loadData() {
-      const supabase = createClient()
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
-      if (!user) {
-        router.push('/login?redirect=/settings/profile')
-        return
-      }
-
-      setUserId(user.id)
-      setEmail(user.email ?? '')
-
-      const metadata = user.user_metadata ?? {}
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('first_name, last_name, display_name')
-        .eq('id', user.id)
-        .maybeSingle()
-
-      setFirstName(profile?.first_name || metadata.first_name || '')
-      setLastName(profile?.last_name || metadata.last_name || '')
-      setLoading(false)
+    if (data?.profile) {
+      setFirstName(data.profile.first_name ?? '')
+      setLastName(data.profile.last_name ?? '')
     }
+  }, [data])
 
-    void loadData()
-  }, [router])
-
-  const displayName = `${firstName} ${lastName}`.trim()
-
-  async function handleSave(e: React.FormEvent) {
-    e.preventDefault()
-    if (!userId) return
-
-    setSaving(true)
-    const supabase = createClient()
-
-    try {
-      const { error: profileErr } = await supabase.from('profiles').upsert({
-        id: userId,
-        first_name: firstName.trim(),
-        last_name: lastName.trim(),
-        display_name: displayName,
-        updated_at: new Date().toISOString(),
-      })
-
-      if (profileErr) throw profileErr
-
-      await supabase.auth.updateUser({
-        data: {
-          first_name: firstName.trim(),
-          last_name: lastName.trim(),
-          display_name: displayName,
-        },
-      })
-
+  const mutation = useMutation({
+    mutationFn: updateProfileApi,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['profile'] })
       toast.success('Profil berhasil diperbarui')
-      router.refresh()
-    } catch (err: unknown) {
+    },
+    onError: (err: unknown) => {
       toast.error('Gagal memperbarui profil', {
         description: err instanceof Error ? err.message : 'Periksa kembali data Anda.',
       })
-    } finally {
-      setSaving(false)
-    }
+    },
+  })
+
+  const displayName = `${firstName} ${lastName}`.trim()
+
+  function handleSave(e: React.FormEvent) {
+    e.preventDefault()
+    mutation.mutate({
+      first_name: firstName.trim(),
+      last_name: lastName.trim(),
+      display_name: displayName,
+    })
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="py-8 text-center text-sm text-muted-foreground">
         Memuat informasi profil...
       </div>
     )
   }
+
+  if (error) {
+    return (
+      <div className="py-8 text-center text-sm text-red-500">
+        Gagal memuat data: {error instanceof Error ? error.message : 'Terjadi kesalahan.'}
+      </div>
+    )
+  }
+
+  const email = data?.email ?? ''
 
   return (
     <div className="space-y-6">
@@ -159,10 +178,10 @@ export default function ProfileSettingsPage() {
         <div className="pt-2">
           <button
             type="submit"
-            disabled={saving}
+            disabled={mutation.isPending}
             className="rounded-2xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:opacity-50"
           >
-            {saving ? 'Menyimpan...' : 'Simpan Perubahan'}
+            {mutation.isPending ? 'Menyimpan...' : 'Simpan Perubahan'}
           </button>
         </div>
       </form>
