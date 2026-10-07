@@ -132,69 +132,65 @@
 .brutalism {
   color-scheme: light;
   --background: #fffdf0;
-  --foreground: #000000;
+  --foreground: #18181b;
   --card: #ffffff;
-  --card-foreground: #000000;
+  --card-foreground: #18181b;
   --popover: #ffffff;
-  --popover-foreground: #000000;
-  --primary: #000000;
+  --popover-foreground: #18181b;
+  --primary: #18181b;
   --primary-foreground: #ffffff;
-  --secondary: #ffde59;
-  --secondary-foreground: #000000;
+  --secondary: #fef08a;
+  --secondary-foreground: #18181b;
   --muted: #f4f0db;
-  --muted-foreground: #333333;
-  --accent: #ff914d;
-  --accent-foreground: #000000;
-  --destructive: #ff3131;
-  --border: #000000;
-  --input: #000000;
-  --ring: #000000;
-  --radius: 0px;
+  --muted-foreground: #52525b;
+  --accent: #fdba74;
+  --accent-foreground: #18181b;
+  --destructive: #ef4444;
+  --border: #18181b;
+  --input: #ffffff;
+  --ring: #18181b;
+  --radius: 8px;
 }
 
-.brutalism * {
-  border-color: #000000 !important;
-}
-
-.brutalism button,
+.brutalism button:not(.fab-btn),
 .brutalism input,
-.brutalism .card,
-.brutalism [class*="rounded"] {
-  border-width: 2px !important;
-  box-shadow: 3px 3px 0px #000000 !important;
+.brutalism .card {
+  border: 2px solid #18181b !important;
+  box-shadow: 3px 3px 0px #18181b !important;
 }
 
 .brutalism-dark {
   color-scheme: dark;
-  --background: #121214;
-  --foreground: #f4f4f5;
+  --background: #09090b;
+  --foreground: #fafafa;
   --card: #18181b;
-  --card-foreground: #f4f4f5;
+  --card-foreground: #fafafa;
   --popover: #18181b;
-  --popover-foreground: #f4f4f5;
-  --primary: #a3e635;
-  --primary-foreground: #000000;
+  --popover-foreground: #fafafa;
+  --primary: #84cc16;
+  --primary-foreground: #09090b;
   --secondary: #27272a;
-  --secondary-foreground: #f4f4f5;
+  --secondary-foreground: #fafafa;
   --muted: #27272a;
   --muted-foreground: #a1a1aa;
   --accent: #f59e0b;
-  --accent-foreground: #000000;
+  --accent-foreground: #09090b;
   --destructive: #ef4444;
-  --border: #f4f4f5;
-  --input: #27272a;
-  --ring: #a3e635;
-  --radius: 0px;
+  --border: #3f3f46;
+  --input: #18181b;
+  --ring: #84cc16;
+  --radius: 8px;
 }
 
-.brutalism-dark * {
-  border-color: #52525b !important;
+.brutalism-dark input {
+  background-color: #18181b !important;
+  color: #fafafa !important;
+  border: 2px solid #3f3f46 !important;
+  box-shadow: 2px 2px 0px #27272a !important;
 }
 
-.brutalism-dark button,
-.brutalism-dark input,
-.brutalism-dark .card,
-.brutalism-dark [class*="rounded"] {
-  border-width: 2px !important;
-  box-shadow: 3px 3px 0px #a3e635 !important;
+.brutalism-dark button:not(.fab-btn),
+.brutalism-dark .card {
+  border: 2px solid #3f3f46 !important;
+  box-shadow: 3px 3px 0px #84cc16 !important;
 }
